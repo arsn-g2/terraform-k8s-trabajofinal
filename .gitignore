@@ -1,3 +1,31 @@
 arsn-trabajo-final-26-27.pdf
 terraform_files_p14/**/*
 
+# Terraform: estado, caché del provider y variables con datos reales
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+*.tfplan
+tfplan
+crash.log
+crash.*.log
+# *.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+# .terraform.lock.hcl SÍ se versiona (fija las versiones de los providers)
+
+# # Claves SSH y secretos: nunca al repo
+# keys/
+# id_rsa*
+# id_ed25519*
+# *.pem
+# *.key
+# .env
+
+# Sistema / editor
+*.swp
+.DS_Store
