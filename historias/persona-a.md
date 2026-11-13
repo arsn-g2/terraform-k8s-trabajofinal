@@ -87,7 +87,7 @@ sudo vnx -f k8s_lab-terraform.xml -x install-terraform
 
 *Spike* de investigación para cuando empiece el trabajo de la VLAN. Se puede hacer en cuanto el entorno esté levantado: no necesita Terraform ni los LXC. El resultado son decisiones, no código de entrega.
 
-📖 Punto de partida: [guía de Multus](../docs/guia-multus.md), con lo que hicimos en la práctica 1.3.
+📖 Punto de partida: [guía de Multus](../docs/useful/multus/guia-multus.md), con lo que hicimos en la práctica 1.3.
 
 **Qué investigar:**
 1. **Cómo se hizo en la práctica 1.3:** subinterfaz en el nodo, tipo de NAD, IPAM y anotación de los Pods. Es el punto de partida que pide el enunciado (§2.2 y §2.3).

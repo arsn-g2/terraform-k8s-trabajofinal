@@ -1,0 +1,46 @@
+# metallb-config.yaml
+# MetalLB IP Address Pool and L2 Advertisement configuration
+# Example adapted from: https://oneuptime.com/blog/post/2026-01-07-metallb-install-bare-metal-kubernetes/view
+
+---
+# IPAddressPool defines the range of IP addresses available for allocation
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  # Name used to reference this pool in service annotations
+  name: default-pool
+  # All MetalLB resources must be in metallb-system namespace
+  namespace: metallb-system
+spec:
+  # Define IP ranges that MetalLB can allocate
+  # Ensure these IPs are routable on your network and not used elsewhere
+  addresses:
+    - 10.10.10.20-10.10.10.30
+    # You can also use CIDR notation for IP ranges
+    # - 192.168.1.0/28
+    # Or specify individual IPs
+    # - 10.0.0.100/32
+
+  # Automatically assign IPs from this pool (set to false for manual assignment)
+  autoAssign: true
+
+---
+# L2Advertisement makes MetalLB announce IPs via ARP/NDP
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: default-l2-advertisement
+  namespace: metallb-system
+spec:
+  # Reference the IP pool(s) to advertise via Layer 2
+  ipAddressPools:
+    - default-pool
+
+  # Optional: Restrict which nodes can announce IPs
+  # nodeSelectors:
+  #   - matchLabels:
+  #       node-role.kubernetes.io/worker: ""
+
+  # Optional: Restrict which network interfaces to use for ARP
+  # interfaces:
+  #   - eth0

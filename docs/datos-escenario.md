@@ -80,7 +80,7 @@ El clúster arranca vacío: en `default` solo está el Service `kubernetes`.
 | Interfaz hacia `VlanNet` | **`e2`** en los dos workers (no `eth2`), en estado UP y sin IP. `VlanNet` es un switch Open vSwitch compartido con el escenario de los LXC |
 | Subinterfaces VLAN | Ninguna todavía. Hay que crear `e2.<vlan>` en cada arranque ([US-10](../historias/persona-a.md#us-10)) |
 
-Cómo lo hicimos en la práctica 1.3 y plantillas para Terraform: [guía de Multus](guia-multus.md).
+Cómo lo hicimos en la práctica 1.3 y plantillas para Terraform: [guía de Multus](useful/multus/guia-multus.md).
 
 VLAN ID y subred: **pendientes** ([US-03](../historias/persona-c.md#us-03)). Como referencia, `k8s_lab-vms-vlan.xml` (práctica 1.3) usa los tags 1000 y 1001 con `10.1.2.0/24` y `10.1.3.0/24`.
 
@@ -109,7 +109,7 @@ Mientras no haya IP externa, el Ingress se prueba por NodePort desde el host: `c
 | Pool previsto | `10.10.10.20-10.10.10.30` (`/root/k8s/metallb-config.yaml` en `k8s-master`) |
 | Estado el 13/11/2026 | ⚠️ **Sin `IPAddressPool` ni `L2Advertisement`**: `start-k8s-calico` no dejó la configuración aplicada |
 
-Conceptos, lo que hicimos en P1.3 y problemas conocidos: [guía de MetalLB](guia-metallb.md).
+Conceptos, lo que hicimos en P1.3 y problemas conocidos: [guía de MetalLB](useful/metallb/guia-metallb.md).
 
 Arreglo: relanzar `sudo vnx -f k8s_lab-calico.xml -x config_metallb` o aplicar el fichero directamente con `ssh root@k8s-master kubectl apply -f /root/k8s/metallb-config.yaml`. Comprobar con:
 
