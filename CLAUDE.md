@@ -2,51 +2,90 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project status
+## What this is
 
-This is the final assignment for the CNVR/ARSN course (2026-27): **automated deployment of a scalable web app on Kubernetes using Terraform**. the spec is in `arsn-trabajo-final-26-27.pdf` (in Spanish). The PDF is the source of truth. Re-read it (`pdftotext -layout arsn-trabajo-final-26-27.pdf -`) if a requirement below is unclear. Update this file once real code and commands exist.
+**The main purpose of this project is the UPM ARSN/CNVR 2026-27 Trabajo Final**, "Despliegue automático de una aplicación escalable sobre Kubernetes utilizando los servicios de orquestación de Terraform". The spec is `ARSN-trabajo-final-26-27.pdf`, which is in Spanish. We are **Group 2**, so the Ingress path is `/servers-G2`. A team of 3 works on it, each owning one stream (A: VLAN/Multus/VNX-LXC, B: Pods/Secrets/web content, C: Services/Ingress/NetworkPolicies/integration). Project docs (read them first and keep them updated):
+- `plan.md`: overview, folder layout, interface contract, risks.
+- `tasks.md`: progressive checklist (IDs S0.x, A1–A9, B1–B9, C1–C9, I1–I4, H1–H4). Tick tasks as they are completed.
+- `user-stories.md`: per-task description, owner, effort, dependencies, acceptance criteria.
+- `decisions.md`: **the decision log is a required deliverable.** We may adapt the PDF, but every design choice or deviation needs an entry (context, options, decision, why). When you make or propose a design choice, add or update an entry.
 
-The team's work plan is in Spanish. `plan.md` has the split between three owners, the phases, the milestones (H0–H3), the handoffs between people, and the proposed repo layout (`terraform/`, `vnx/`, `scripts/`, `docs/`), including which `.tf` file each person owns. The user stories (HU-00…HU-42) are in `historias/`, one file per owner. Each story has an `<a id="hu-NN">` anchor and the files link to each other, so keep those anchors and links working when editing. The shared final story HU-43 is in `plan.md`. Follow that layout and reference story IDs when working on a task.
+Practice 1.4 (Terraform) is earlier coursework and serves as reference/knowledge only:
+- `terraform-k8s/`: the team's P1.4 k8s solution (Deployment + Service with locals, NetworkPolicies, outputs, `kubernetes_resources` data source). **This is the starting point for the Trabajo Final's Terraform style.** It still has live state (`terraform.tfstate`), with objects in namespace `default` (nginx NodePort 30001, `default-deny-all`, `tester`).
+- `terraform_files_p14/`: read-only reference `.tf` files from Moodle. `apartado2-*` are OpenStack (another scenario, irrelevant here) and `apartado3-*` are k8s.
+- `ARSN_terraform-k8s-lab-p1.4.pdf`, `create-keypairs.sh`: P1.4 material (OpenStack).
 
-## Commands
+It is not a software project, so there is nothing to build or unit-test. The work is Terraform HCL, VNX XML and shell scripts, run against the lab scenario.
 
-Standard Terraform workflow, using the `hashicorp/kubernetes` provider against the course's Kubernetes lab cluster:
+## Trabajo Final: what has to be deployed
 
-```
-terraform init
-terraform fmt -recursive
-terraform validate
-terraform plan
-terraform apply
-terraform destroy
-terraform apply -target=<resource_address>   # iterate on one resource
-```
-
-The VNX scenario (the LXC containers) is managed separately from Terraform with the `vnx` tool (e.g. `vnx -f <scenario>.xml --create` / `--destroy`).
-
-## Target architecture
-
-Two scenarios share one VLAN:
-
-1. **Kubernetes cluster** (Calico CNI, lab scenario from práctica 1.4; workers `k8s-worker1` and `k8s-worker2`), with every resource defined in Terraform:
-   - **Web Deployment**: 3 Nginx replicas, using the course-provided image (it already includes sshd).
-   - **Admin Pod**: course-provided image. `nodeSelector` pins it to `k8s-worker1`.
-2. **VNX scenario**: LXC containers for **MariaDB** and a **log server**. Start from `k8s_lab-vms-vlan.xml` (práctica 1.3). Install packages and enable SSH with `<exec>` steps, and copy config files and authorized SSH keys in with `<filetree>`. The containers attach to `VlanNet`, which is shared with the worker nodes.
-
-### Requirements that span several resources
-
-- **VLAN + Multus**: create VLAN subinterfaces on both workers, as in práctica 1.3. Define `NetworkAttachmentDefinition` resources with `kubernetes_manifest`, since the provider has no native resource for that CRD. Add the extra interface to both the web Pods and the admin Pod. The admin Pod and the web Pods must both be able to manage the DB over the VLAN.
-- **SSH via Secrets**: use key-based authentication only, with no passwords. The admin Pod connects to the web servers and the LXC containers over the VLAN.
-  - The spec's wording is that web servers get "the private key" and admin gets "the public key as authorized key". That looks reversed relative to the stated goal (admin SSHes into the web servers). Ask the user about this ambiguity before implementing it.
-- **Per-Pod page**: a `ConfigMap` holds an `index.html` template with a placeholder. Either an initContainer or a sidecar reads the template, replaces the placeholder with the Pod name (Downward API `metadata.name`), and writes the result to a shared writable volume (e.g. `emptyDir`) that Nginx serves. The ConfigMap volume is mounted read-only.
+Full requirements: PDF §2–§5. Proposed layout and owners: `plan.md`.
+- **Web**: a Deployment with 3 replicas of `dgsgiros/nginx-ssh:latest` (user `webuser`, GID 1000). `index.html` is generated from a ConfigMap template, with the Pod name substituted in by an initContainer or sidecar into a shared `emptyDir`.
+- **Admin**: one Pod of `dgsgiros/admin-ssh:latest` (user `adminuser`, GID 1000), with `fsGroup: 1000` and a `nodeSelector` for `k8s-worker1`.
+- **VLAN**:
+  - Pods get an extra interface via Multus `NetworkAttachmentDefinition`, created with `kubernetes_manifest` because the provider has no native resource for it;
+  - the workers need `eth2.<VLAN>` subinterfaces, since their `if id=2` is on the OVS net `VlanNet`;
+  - LXC `db` (MariaDB) and `logs` live in a separate VNX XML based on `../../k8s_lab-vms-vlan.xml`, with `exec` steps for installation and `filetree` for configs and `authorized_keys`.
+- **SSH (keys only)**:
+  - pair 1 is admin → web/LXC. The private key goes in the admin Secret, and the public key into web `authorized_keys` and the LXC;
+  - pair 2 is host → admin. The public key goes into admin `authorized_keys`;
+  - Secrets are created with `kubernetes_secret_v1` in Terraform, **not** `kubectl create secret`.
 - **Services**:
-  - Web: `ClusterIP`, port 8080 → targetPort 80.
-  - Admin: `NodePort`, port 2222 → targetPort 22, with `externalTrafficPolicy: Local`. This preserves the client source IP, which the NetworkPolicy depends on. Clients SSH to the IP of `k8s-worker1` on the assigned nodePort.
-- **Ingress**: path `/servers-GX` → web Service, where `X` is the lab group number. Ask the user for the number if it isn't known.
+  - web is `ClusterIP` 8080→80;
+  - admin is `NodePort` 2222→22 with `externalTrafficPolicy: Local`. SSH goes to `10.10.10.11:<nodePort>`.
+- **Ingress**: path `/servers-G2` (from `var.group_number = 2`) → web Service. It needs the rewrite-target annotation.
 - **NetworkPolicies**:
-  1. Default-deny for both Ingress and Egress on the selected Pods.
-  2. Web Pods accept ingress only from the ingress-nginx controller Pods: `namespaceSelector` `kubernetes.io/metadata.name: ingress-nginx` plus a `podSelector` on the controller's labels (look them up with `kubectl get pods -n ingress-nginx --show-labels`).
-  3. Admin Pod accepts TCP/22 only from the host's IP on `user_LAN`, as an `ipBlock` /32 CIDR (see the topology figure in práctica 1.4).
-  - Default-deny also blocks the Pod-to-Pod and Pod-to-LXC SSH/DB traffic. Check that the policies still allow the required VLAN traffic, or that Multus secondary interfaces fall outside Calico policy enforcement.
+  - default deny for Ingress and Egress;
+  - web ingress allowed only from ingress-nginx Pods (namespaceSelector `kubernetes.io/metadata.name: ingress-nginx` + podSelector), on Pod port 80;
+  - admin SSH allowed only from `ipBlock 10.10.20.2/32` (the host on `user_LAN`).
+  - Calico does **not** police the Multus/VLAN interfaces.
 
+NOTE shared/terraform-k8s-trabajofinal is the git repo, but has old content(we are working on this today)
+shared/terraform-lab/ is the most updated in terms of environment settings. but I like the organization around team plan and user stories saved in the repo(but they need to be updated to reflect the current deployed environment)
 
+## Environment and path mapping
+
+- Scenario root on the host: `/mnt/tmp/k8s_lab-calico-v02/`. **`/mnt/tmp` is temporary storage** and the folder is not a git repo, so back up or commit the work elsewhere.
+- k8s cluster (`k8s_lab-calico.xml`, Calico CNI):
+  - `k8s-master` 10.10.10.10;
+  - `k8s-worker1` 10.10.10.11 and `k8s-worker2` 10.10.10.12. Both are on `k8s_LAN`, have eth2 on `VlanNet`, and mount `shared/` at `/shared`;
+  - `r1` 10.10.10.1 / 10.10.20.1;
+  - host 10.10.20.2 on `user_LAN`;
+  - MetalLB pool `10.10.10.20-30`.
+- `terraform` LXC VM (`k8s_lab-terraform.xml`): `10.10.10.13`. `shared/` is mounted at **`/shared`**, so this directory is `/shared/terraform-lab/` inside the VM. Run all `terraform` commands there. Edit files on the host.
+- `kubectl` works from the host once `bin/get-master-kubeconf` has run. `bin/set-terraform-kubeconf` copies the kubeconfig into the terraform VM's `~/.kube/config`.
+- Provider: `hashicorp/kubernetes` pinned to `2.23.0` (see `terraform-k8s/k8s-provider.tf`). Prefer `_v1` resources (`kubernetes_deployment_v1`, `kubernetes_service_v1`, `kubernetes_ingress_v1`, `kubernetes_network_policy_v1`, `kubernetes_secret_v1`, `kubernetes_config_map_v1`).
+- Before creating or copying `.tf` files into a new working folder, ask the user. `plan.md` proposes `trabajo-final/terraform/`.
+
+## Scenario commands (host, from `/mnt/tmp/k8s_lab-calico-v02`)
+
+```
+bin/start-k8s-calico                 # create cluster, join workers, configure MetalLB
+bin/get-master-kubeconf              # kubeconfig → host ~/.kube/config
+sudo vnx -f k8s_lab-terraform.xml --create
+sudo vnx -f k8s_lab-terraform.xml -x install-terraform   # re-run if `terraform --version` fails
+bin/set-terraform-kubeconf           # kubeconfig → terraform VM
+bin/stop-k8s-calico                  # destroy cluster
+```
+
+## Terraform workflow (inside the `terraform` VM)
+
+```
+terraform init                 # use `init -upgrade` after adding a provider/module
+terraform validate             # syntax only
+terraform plan / apply         # full config. Use -target only to debug one piece
+terraform state list | terraform state show TYPE.NAME
+terraform output [-json] [NAME]
+terraform destroy              # P1.4 leftovers: run in terraform-k8s/ to clear namespace default
+```
+
+If `init -upgrade` fails, run `rm -rf .terraform .terraform.lock.hcl` and then try it again. Terraform loads **every `.tf` in the working folder** as one configuration, so keep the Trabajo Final and P1.4 folders separate. Each has its own state.
+
+## Gotchas
+
+- `kubernetes_manifest` (used for the NAD) needs the CRD to exist at **plan** time, so Multus must be installed before `terraform plan`.
+- If Multus IPAM is `host-local`, each node allocates independently and web Pods can get duplicate VLAN IPs. Use whereabouts or per-node ranges (`plan.md` R1).
+- The NetworkPolicy port for web is the **Pod** port 80, not the Service port 8080. Peers that combine namespaceSelector and podSelector must be in the **same** `from` block (AND), not separate ones (OR).
+- NetworkPolicy cannot match ICMP. A rule without `ports` allows all protocols (see the comments in `terraform-k8s/network-policy-*.tf`).
+- With default-deny egress, Pods lose DNS unless egress to `kube-dns` on 53/UDP+TCP is allowed (the pattern is in `terraform-k8s/network-policy-egress-tcp-tester.tf`).
+- Never commit `keys/` (private SSH keys) or `*.tfstate*`.

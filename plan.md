@@ -4,7 +4,11 @@
 
 **Equipo:** 3 personas (**Persona A**, **Persona B** y **Persona C**). Reemplacen los nombres cuando repartan los roles.
 
-**Fuente de verdad:** `arsn-trabajo-final-26-27.pdf`. Si este plan contradice el enunciado, manda el enunciado.
+**Fuente de verdad:** `ARSN-trabajo-final-26-27.pdf`, **versión del 5 de noviembre de 2026** ([D-008](decisions.md)). Si este plan contradice el enunciado, manda el enunciado.
+
+**Decisiones de diseño:** [decisions.md](decisions.md) (entregable obligatorio: toda adaptación del enunciado lleva su entrada).
+
+**Entorno:** escenario `k8s_lab-calico` en `/mnt/tmp/k8s_lab-calico-v02` y VM `terraform`, donde se corre Terraform. Cómo levantarlo y datos medidos: [US-02](historias/persona-a.md#us-02).
 
 🧭 **Fases y dependencias, historia por historia:** [fases.md](fases.md)
 
@@ -27,8 +31,9 @@
 | 🏁 | Entrega final |
 | ⚠️ | Trampa conocida o detalle fácil de olvidar |
 | 🧪 | Criterios de aceptación (cómo se comprueba que está lista) |
+| ✅ / ⬜ | Columna **Completed**: historia terminada (cumple sus 🧪) / pendiente. Al cerrar una historia, cambiar ⬜ por ✅ en [fases.md](fases.md) y en el archivo de su persona |
 
-Iconos de tipo de historia: 🏗️ preparación · 🌐 red · 🖥️ web · 🔑 SSH · 🛡️ NetworkPolicy · ✅ verificación · 📝 documentación
+Iconos de tipo de historia: 🏗️ preparación · 🌐 red · 🖥️ web · 🔑 SSH · 🛡️ NetworkPolicy · 🔵 verificación · 📝 documentación
 
 ---
 
@@ -49,16 +54,19 @@ Iconos de tipo de historia: 🏗️ preparación · 🌐 red · 🖥️ web · �
 ---
 
 <a id="dudas"></a>
-## 2. ❓ Dudas que hay que resolver antes de empezar
+## 2. ❓ Dudas: estado
 
-⛔ Resolverlas con el profesor en la Fase 0 ([HU-03](historias/persona-c.md#hu-03)), porque bloquean historias posteriores.
+La versión del enunciado del **5 de noviembre de 2026** y el entorno desplegado ([US-02](historias/persona-a.md#us-02)) resolvieron casi todo. Lo que queda abierto se cierra en [US-03](historias/persona-c.md#us-03) y se registra en [decisions.md](decisions.md).
 
-1. **Dirección de las claves SSH.** El apartado 2.5 del enunciado dice que a los servidores web se les da la *clave privada* y al admin la *clave pública* como autorizada. Eso parece al revés del objetivo (el admin es quien entra por SSH a los web). Confirmar cuál es la interpretación correcta. Si se requiere acceso en ambos sentidos, se usan dos pares de claves.
-2. **Número de grupo `X`**, para la ruta del Ingress `/servers-GX`.
-3. **ID de VLAN y subred** de la red compartida (por ejemplo, VLAN 100 y `10.100.0.0/24`). Revisar si la práctica 1.3 ya trae valores asignados.
-4. **Nombres y tags de las imágenes** que va a dar el profesor para el web y el admin. Revisar también qué incluyen: `sshd`, cliente `mysql`/`mariadb`, `ip`, `ping`.
-5. **IP del host en `user_LAN`** (Figura 2 de la práctica 1.4), que es la única IP con permiso de SSH al admin.
-6. **¿El servidor de logs necesita algún servicio concreto** (por ejemplo, rsyslog recibiendo en 514/UDP), o basta con que exista en la VLAN y acepte SSH?
+| # | Duda | Estado |
+|---|---|---|
+| 1 | Dirección de las claves SSH | ✅ Enunciado §2.5: **dos pares**. Par 1 (admin → web/LXC): privada en el admin, pública en los web y los LXC. Par 2 (host → admin): privada en el host, pública en el admin ([D-004](decisions.md)) |
+| 2 | Número de grupo `X` | ✅ Grupo 2, ruta `/servers-G2` ([D-001](decisions.md)) |
+| 3 | ID de VLAN y subred | ⏳ **Abierta.** Como referencia, `k8s_lab-vms-vlan.xml` usa los tags 1000/1001 con `10.1.2.0/24` y `10.1.3.0/24` |
+| 4 | Imágenes | ✅ Enunciado §2.1: `dgsgiros/nginx-ssh:latest` (`webuser`) y `dgsgiros/admin-ssh:latest` (`adminuser`), ambos GID 1000 y con `sudo`. Traen ping, nmap, curl, ip e ifconfig. Falta comprobar si traen cliente de MariaDB ([D-007](decisions.md)) |
+| 5 | IP del host en `user_LAN` | ✅ `10.10.20.2` |
+| 6 | Función del servidor de logs | ⏳ Propuesta: rsyslog en 514 UDP/TCP ([D-006](decisions.md)) |
+| 7 | IPAM de la VLAN | ⏳ **Abierta.** `whereabouts` no está instalado. Se investiga en [US-19](historias/persona-a.md#us-19) ([D-005](decisions.md)) |
 
 ---
 
@@ -69,33 +77,41 @@ Iconos de tipo de historia: 🏗️ preparación · 🌐 red · 🖥️ web · �
 .
 ├── CLAUDE.md
 ├── plan.md                     # este archivo
+├── fases.md
+├── decisions.md                # registro de decisiones (entregable)
 ├── historias/
 │   ├── persona-a.md
 │   ├── persona-b.md
 │   └── persona-c.md
-├── README.md                   # cómo desplegar de cero (HU-42)
+├── README.md                   # cómo desplegar de cero (US-42)
 ├── terraform/
 │   ├── providers.tf            # B: provider kubernetes (+ tls/local si se usan)
-│   ├── variables.tf            # B: grupo, namespace, IPs, imágenes, VLAN
+│   ├── variables.tf            # B: group_number, namespace, IPs, imágenes, VLAN
 │   ├── terraform.tfvars.example
 │   ├── outputs.tf              # B: IPs, nodePort, URL del Ingress
 │   ├── namespace.tf            # B
 │   ├── multus.tf               # A: NetworkAttachmentDefinition
 │   ├── web.tf                  # B: ConfigMap, Deployment, Service, Ingress
-│   ├── ssh.tf                  # C: claves y Secrets
+│   ├── ssh.tf                  # C: 3 Secrets SSH (kubernetes_secret_v1)
 │   ├── admin.tf                # C: Pod/Deployment admin y Service NodePort
 │   └── netpol.tf               # C (+B): NetworkPolicies
 ├── vnx/
 │   ├── k8s_lab-vms-vlan.xml    # A: escenario adaptado
 │   └── filetree/               # A: configs de MariaDB, authorized_keys, etc.
+├── keys/                       # C: los 2 pares de claves (ignorada por Git)
 ├── scripts/
-│   ├── setup-vlan-workers.sh   # A: subinterfaces VLAN en los workers
+│   ├── gen-keys.sh             # C: genera los 2 pares con ssh-keygen
+│   ├── setup-vlan-workers.sh   # A: subinterfaces e2.<vlan> en los workers
 │   └── verify.sh               # B: pruebas automáticas
 └── docs/
+    ├── convenciones.md
+    ├── datos-escenario.md      # A: datos del entorno (US-02)
+    ├── guia-multus.md          # A: Multus/VLAN, de P1.3 al Trabajo Final
+    ├── guia-metallb.md         # MetalLB, de P1.3 al Trabajo Final
     └── capturas/               # C: evidencias para la memoria
 ```
 
-`.gitignore` mínimo: `.terraform/`, `*.tfstate*`, `*.tfvars` (excepto el `.example`), `keys/`, `id_*`.
+`.gitignore` mínimo: `.terraform/`, `*.tfstate*`, `*.tfvars` (excepto el `.example`), `keys/`, `id_*`. ⚠️ Hoy las líneas de claves están comentadas ([US-00](historias/persona-c.md#us-00)).
 
 ---
 
@@ -105,29 +121,29 @@ Iconos de tipo de historia: 🏗️ preparación · 🌐 red · 🖥️ web · �
 📄 Versión detallada, con cada historia, su responsable y sus dependencias: [fases.md](fases.md)
 
 ```
-Fase 0  🏗️ Preparación ─────────►  HU-00, HU-01, HU-02, HU-03 ⛔
+Fase 0  🏗️ Preparación ─────────►  US-00, US-01, US-02, US-03 ⛔
                                         │
                                    🚩 H0: repo + Terraform base + dudas resueltas
                                         │
-Fase 1  ⚙️ Componentes en paralelo ►  A: HU-10 → HU-11 ⛔      HU-12
-                                      B: HU-13 → HU-14 → HU-15
-                                      C: HU-16 🤝 → HU-17 → HU-18
+Fase 1  ⚙️ Componentes en paralelo ►  A: US-19 ⛔ → US-10 → US-11 ⛔   US-12
+                                      B: US-13 → US-14 → US-15
+                                      C: US-16 🤝 → US-17 → US-18
                                         │
                                    🚩 H1: cada componente funciona por separado
                                         │
-Fase 2  🔀 Integración por VLAN ──►  A: HU-20 🤝, HU-21      (necesitan HU-12 y HU-16)
-                                      B: HU-22 🔀 → HU-23 🔀  (necesitan HU-11, HU-14, HU-20)
-                                      C: HU-24 🔀            (necesita HU-11, HU-17, HU-20)
+Fase 2  🔀 Integración por VLAN ──►  A: US-20 🤝, US-21      (necesitan US-12 y US-16)
+                                      B: US-22 🔀 → US-23 🔀  (necesitan US-11, US-14, US-20)
+                                      C: US-24 🔀            (necesita US-11, US-17, US-20)
                                         │
                                    🚩 H2: todo conectado por la VLAN
                                         │
-Fase 3  🛡️ NetworkPolicies ───────►  C: HU-30 ⛔ → HU-32
-                                      B: HU-31               (necesita HU-30)
-                                      A: HU-33 🔀            (necesita HU-30, HU-24)
+Fase 3  🛡️ NetworkPolicies ───────►  C: US-30 ⛔ → US-32
+                                      B: US-31               (necesita US-30)
+                                      A: US-33 🔀            (necesita US-30, US-24)
                                         │
                                    🚩 H3: seguridad aplicada sin romper nada
                                         │
-Fase 4  ✅ Verificación y entrega ►  B: HU-40   A: HU-41 🔀   C: HU-42   Todos: HU-43
+Fase 4  🔵 Verificación y entrega ►  B: US-40   A: US-41 🔀   C: US-42   Todos: US-43
                                         │
                                    🏁 Entrega
 ```
@@ -138,11 +154,11 @@ Fase 4  ✅ Verificación y entrega ►  B: HU-40   A: HU-41 🔀   C: HU-42   T
 
 | Fase | Persona A 🌐 | Persona B 🖥️ | Persona C 🔐 |
 |---|---|---|---|
-| 0 🏗️ | [HU-02](historias/persona-a.md#hu-02) | [HU-01](historias/persona-b.md#hu-01) | [HU-00](historias/persona-c.md#hu-00), [HU-03](historias/persona-c.md#hu-03) ⛔ |
-| 1 ⚙️ | [HU-10](historias/persona-a.md#hu-10), [HU-11](historias/persona-a.md#hu-11) ⛔🤝, [HU-12](historias/persona-a.md#hu-12) | [HU-13](historias/persona-b.md#hu-13), [HU-14](historias/persona-b.md#hu-14) 🤝, [HU-15](historias/persona-b.md#hu-15) | [HU-16](historias/persona-c.md#hu-16) 🤝, [HU-17](historias/persona-c.md#hu-17) 🔀, [HU-18](historias/persona-c.md#hu-18) |
-| 2 🔀 | [HU-20](historias/persona-a.md#hu-20) 🤝, [HU-21](historias/persona-a.md#hu-21) | [HU-22](historias/persona-b.md#hu-22) 🔀, [HU-23](historias/persona-b.md#hu-23) 🔀 | [HU-24](historias/persona-c.md#hu-24) 🔀 |
-| 3 🛡️ | [HU-33](historias/persona-a.md#hu-33) 🔀 | [HU-31](historias/persona-b.md#hu-31) | [HU-30](historias/persona-c.md#hu-30) ⛔, [HU-32](historias/persona-c.md#hu-32) |
-| 4 ✅ | [HU-41](historias/persona-a.md#hu-41) 🔀 | [HU-40](historias/persona-b.md#hu-40) | [HU-42](historias/persona-c.md#hu-42) 📝 |
+| 0 🏗️ | [US-02](historias/persona-a.md#us-02) | [US-01](historias/persona-b.md#us-01) | [US-00](historias/persona-c.md#us-00), [US-03](historias/persona-c.md#us-03) ⛔ |
+| 1 ⚙️ | [US-19](historias/persona-a.md#us-19) ⛔, [US-10](historias/persona-a.md#us-10), [US-11](historias/persona-a.md#us-11) ⛔🤝, [US-12](historias/persona-a.md#us-12) | [US-13](historias/persona-b.md#us-13), [US-14](historias/persona-b.md#us-14) 🤝, [US-15](historias/persona-b.md#us-15) | [US-16](historias/persona-c.md#us-16) 🤝, [US-17](historias/persona-c.md#us-17) 🔀, [US-18](historias/persona-c.md#us-18) |
+| 2 🔀 | [US-20](historias/persona-a.md#us-20) 🤝, [US-21](historias/persona-a.md#us-21) | [US-22](historias/persona-b.md#us-22) 🔀, [US-23](historias/persona-b.md#us-23) 🔀 | [US-24](historias/persona-c.md#us-24) 🔀 |
+| 3 🛡️ | [US-33](historias/persona-a.md#us-33) 🔀 | [US-31](historias/persona-b.md#us-31) | [US-30](historias/persona-c.md#us-30) ⛔, [US-32](historias/persona-c.md#us-32) |
+| 4 🔵 | [US-41](historias/persona-a.md#us-41) 🔀 | [US-40](historias/persona-b.md#us-40) | [US-42](historias/persona-c.md#us-42) 📝 |
 
 ---
 
@@ -153,14 +169,16 @@ En cada hito los tres se juntan, hacen `terraform destroy && terraform apply` en
 
 | Hito | Se cumple cuando… |
 |---|---|
-| 🚩 **H0: Arranque** | Repo creado ([HU-00](historias/persona-c.md#hu-00)), `terraform apply` crea el namespace ([HU-01](historias/persona-b.md#hu-01)), datos del escenario documentados ([HU-02](historias/persona-a.md#hu-02)), las 6 dudas resueltas ([HU-03](historias/persona-c.md#hu-03)) |
-| 🚩 **H1: Componentes listos** | La VLAN y la NAD funcionan con un Pod de prueba, los LXC hacen ping, `curl /servers-GX` balancea entre 3 Pods, el SSH al admin por NodePort funciona |
+| 🚩 **H0: Arranque** | Repo creado ([US-00](historias/persona-c.md#us-00)), `terraform apply` crea el namespace ([US-01](historias/persona-b.md#us-01)), datos del escenario documentados ([US-02](historias/persona-a.md#us-02)), las dudas abiertas cerradas en `decisions.md` ([US-03](historias/persona-c.md#us-03)) |
+| 🚩 **H1: Componentes listos** | La VLAN y la NAD funcionan con un Pod de prueba, los LXC hacen ping, `curl /servers-G2` balancea entre 3 Pods, el SSH al admin por NodePort funciona |
 | 🚩 **H2: Integración por VLAN** 🔀 | Ping y SSH entre web ↔ admin ↔ `bbdd` ↔ `logs` por la VLAN, y `mysql` funciona desde los web y desde el admin |
 | 🚩 **H3: Seguridad aplicada** | Las 3 NetworkPolicies están activas y todas las pruebas de H1 y H2 siguen pasando. Las pruebas negativas (acceso no autorizado) fallan |
-| 🏁 **Entrega** | `verify.sh` en verde tras un despliegue de cero en otra computadora, memoria lista, demo ensayada (HU-43) |
+| 🏁 **Entrega** | `verify.sh` en verde tras un despliegue de cero en otra computadora, memoria lista, demo ensayada (US-43) |
 
-<a id="hu-43"></a>
-### 🏁 HU-43 · Ensayo de la demo · Todos · Depende de: [HU-42](historias/persona-c.md#hu-42)
+<a id="us-43"></a>
+### 🏁 US-43 · Ensayo de la demo · Todos · Depende de: [US-42](historias/persona-c.md#us-42)
+**Completed:** ⬜
+
 Ensayar la demo completa, cronometrada. Cada persona explica un área que **no** sea la suya.
 - 🧪 Los tres pueden contestar preguntas sobre cualquier recurso.
 
@@ -171,9 +189,9 @@ Ensayar la demo completa, cronometrada. Cada persona explica un área que **no**
 
 | Persona | Historias | Puntos |
 |---|---|---|
-| 🌐 **A** (Red y VNX) | HU-02 (2), HU-10 (3), HU-11 (5), HU-12 (5), HU-20 (5), HU-21 (3), HU-33 (3), HU-41 (3) | **29** |
-| 🖥️ **B** (Web) | HU-01 (3), HU-13 (2), HU-14 (5), HU-15 (3), HU-22 (3), HU-23 (3), HU-31 (5), HU-40 (5) | **29** |
-| 🔐 **C** (Seguridad) | HU-00 (2), HU-03 (1), HU-16 (3), HU-17 (5), HU-18 (3), HU-24 (5), HU-30 (3), HU-32 (5), HU-42 (3) | **30** |
+| 🌐 **A** (Red y VNX) | US-02 (2), US-19 (3), US-10 (3), US-11 (3), US-12 (5), US-20 (5), US-21 (3), US-33 (3), US-41 (3) | **30** |
+| 🖥️ **B** (Web) | US-01 (3), US-13 (2), US-14 (5), US-15 (3), US-22 (3), US-23 (3), US-31 (5), US-40 (5) | **29** |
+| 🔐 **C** (Seguridad) | US-00 (2), US-03 (1), US-16 (3), US-17 (5), US-18 (3), US-24 (5), US-30 (3), US-32 (5), US-42 (3) | **30** |
 
 Escala: 1 = menos de 1 h, 2 = medio día, 3 = 1 día, 5 = 2 a 3 días (incluye investigar y depurar).
 
@@ -184,11 +202,11 @@ Escala: 1 = menos de 1 h, 2 = medio día, 3 = 1 día, 5 = 2 a 3 días (incluye i
 
 | Entrega | De → a | Cuándo |
 |---|---|---|
-| 🤝 Plan de direccionamiento VLAN (IPs y rangos) | A → B, C | Al terminar [HU-11](historias/persona-a.md#hu-11) |
-| 🤝 Clave pública para el `filetree` de los LXC | C → A | Al terminar [HU-16](historias/persona-c.md#hu-16) |
-| 🤝 Labels de los Pods (`app = web`, `app = admin`) | B, C → C | Al terminar [HU-14](historias/persona-b.md#hu-14) y [HU-17](historias/persona-c.md#hu-17) (las usan las NetworkPolicies) |
-| 🔀 Montaje del Secret SSH en el Deployment web | C → B | Al terminar [HU-17](historias/persona-c.md#hu-17) (cambio en `web.tf`) |
-| 🤝 Credenciales e IP de MariaDB | A → B, C | Al terminar [HU-20](historias/persona-a.md#hu-20) |
+| 🤝 Plan de direccionamiento VLAN (IPs y rangos) | A → B, C | Al terminar [US-11](historias/persona-a.md#us-11) |
+| 🤝 Clave pública del par 1 para el `filetree` de los LXC | C → A | Al terminar [US-16](historias/persona-c.md#us-16) |
+| 🤝 Labels de los Pods (`app = web`, `app = admin`) | B, C → C | Al terminar [US-14](historias/persona-b.md#us-14) y [US-17](historias/persona-c.md#us-17) (las usan las NetworkPolicies) |
+| 🔀 Montaje del Secret `ssh-web-authorized` en el Deployment web | C → B | Al terminar [US-17](historias/persona-c.md#us-17) (cambio en `web.tf`) |
+| 🤝 Credenciales e IP de MariaDB | A → B, C | Al terminar [US-20](historias/persona-a.md#us-20) |
 
 ---
 
@@ -197,9 +215,11 @@ Escala: 1 = menos de 1 h, 2 = medio día, 3 = 1 día, 5 = 2 a 3 días (incluye i
 
 | Riesgo | Mitigación |
 |---|---|
-| Multus o el plugin CNI no están instalados en el escenario | Revisarlo en [HU-02](historias/persona-a.md#hu-02). Si falta, avisar al profesor de inmediato |
-| `kubernetes_manifest` falla en el `plan` porque no existe el CRD | Aplicar en dos pasos (`-target`) o confirmar que Multus está antes del `apply` |
-| Permisos de las claves SSH en volúmenes de Secret | `default_mode`, o copiarlas con un initContainer ([HU-17](historias/persona-c.md#hu-17)) |
-| La IP de origen no se preserva y la política del admin bloquea al host | `externalTrafficPolicy: Local` y conectar **solo** a la IP de `k8s-worker1` ([HU-32](historias/persona-c.md#hu-32)) |
-| Default-deny rompe DNS o tráfico que no se esperaba | Validación explícita en [HU-33](historias/persona-a.md#hu-33) |
-| Una sola persona sabe cómo funciona su área | Revisión cruzada obligatoria y [HU-43](#hu-43) |
+| IPs de la VLAN duplicadas entre workers (`host-local`, sin `whereabouts`) | Investigar y probar el IPAM en [US-19](historias/persona-a.md#us-19) antes de escribir Terraform ([D-005](decisions.md)) |
+| Las subinterfaces `e2.<vlan>` se pierden al recrear el escenario | `setup-vlan-workers.sh` idempotente y parte del procedimiento de [US-41](historias/persona-a.md#us-41) |
+| MetalLB sin `IPAddressPool` (Ingress con `EXTERNAL-IP <pending>`) | `-x config_metallb` en la secuencia diaria de arranque ([US-02](historias/persona-a.md#us-02)); si falla, probar por NodePort |
+| Permisos de las claves SSH en volúmenes de Secret | `fsGroup: 1000` + modo `0440` como en el enunciado; si `sshd` se queja, initContainer ([US-17](historias/persona-c.md#us-17)) |
+| El entorno (`/mnt/tmp`) se crea de cero cada día; solo el repo persiste | Todo paso sobre los nodos o los LXC va en un script o en Terraform del repo. `git push` al terminar cada sesión. Las claves de `keys/` se regeneran cada día con `gen-keys.sh` (nunca van a Git) |
+| La IP de origen no se preserva y la política del admin bloquea al host | `externalTrafficPolicy: Local` y conectar **solo** a la IP de `k8s-worker1` ([US-32](historias/persona-c.md#us-32)) |
+| Default-deny rompe DNS o tráfico que no se esperaba | Validación explícita en [US-33](historias/persona-a.md#us-33) |
+| Una sola persona sabe cómo funciona su área | Revisión cruzada obligatoria y [US-43](#us-43) |

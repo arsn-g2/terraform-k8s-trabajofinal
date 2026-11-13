@@ -16,15 +16,17 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
-# .terraform.lock.hcl SÍ se versiona (fija las versiones de los providers)
+# .terraform.lock.hcl NO se versiona: el entorno se crea de cero cada día y
+# la versión del provider ya está fijada en k8s-provider.tf (2.23.0)
+.terraform.lock.hcl
 
 # # Claves SSH y secretos: nunca al repo
-# keys/
-# id_rsa*
-# id_ed25519*
-# *.pem
-# *.key
-# .env
+keys/
+id_rsa*
+id_ed25519*
+*.pem
+*.key
+.env
 
 # Sistema / editor
 *.swp

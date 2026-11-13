@@ -1,0 +1,91 @@
+<!-- 
+         CREATE P2.1
+         sudo vnx -f openstack_lab.xml -v -x create-scenario-p21
+    -->
+    <exec seq="create-scenario-p21" type="verbatim">
+        source /root/bin/admin-openrc.sh
+
+        # Create security group rules to allow ICMP, SSH and WWW access
+        admin_project_id=$(openstack project show admin -c id -f value)
+        default_secgroup_id=$(openstack security group list -f value | grep default | grep $admin_project_id | cut -d " " -f1)
+        openstack security group rule create --protocol icmp  $default_secgroup_id
+        openstack security group rule create --protocol tcp  --dst-port 80 $default_secgroup_id
+        openstack security group rule create --protocol tcp  --dst-port 22 $default_secgroup_id
+
+        # Create internal networks
+
+        openstack network create net1
+        openstack subnet create --network net1 --gateway 10.10.2.1 --dns-nameserver 8.8.8.8 --subnet-range 10.10.2.0/24 --allocation-pool start=10.10.2.9,end=10.10.2.12 subnet1
+
+        openstack network create net2
+        openstack subnet create --network net2 --gateway 10.20.2.1 --dns-nameserver 8.8.8.8 --subnet-range 10.20.2.0/24 --allocation-pool start=10.20.2.9,end=10.20.2.12 subnet2
+
+
+        # Create external network connection
+        openstack router create r0
+        openstack router set r0 --external-gateway ExtNet
+        openstack router add subnet r0 subnet1
+        openstack router add subnet r0 subnet2
+
+        # crear un puerto para cada dirección IP que se asociara a cada vm
+        openstack port create --network net1 --fixed-ip subnet=subnet1,ip-address=10.10.2.10 port-vm1
+        openstack port create --network net1 --fixed-ip subnet=subnet1,ip-address=10.10.2.11 port-vm3
+        openstack port create --network net1 --fixed-ip subnet=subnet1,ip-address=10.10.2.12 port-vm5
+        openstack port create --network net2 --fixed-ip subnet=subnet2,ip-address=10.20.2.10 port-vm2
+        openstack port create --network net2 --fixed-ip subnet=subnet2,ip-address=10.20.2.11 port-vm4
+        openstack port create --network net2 --fixed-ip subnet=subnet2,ip-address=10.20.2.12 port-vm6
+
+
+        # VMS in NET1
+
+        # Create VM1 
+        mkdir -p /root/keys
+        openstack keypair create vm1 > /root/keys/vm1
+        openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vm1 --port port-vm1 --wait --key-name vm1 --availability-zone nova:compute1
+
+        # Assign floating IP address to vm1
+        openstack server add floating ip vm1 $( openstack floating ip create ExtNet -c floating_ip_address -f value )
+
+        # Create VM3 
+        mkdir -p /root/keys
+        openstack keypair create vm3 > /root/keys/vm3
+        openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vm3 --port port-vm3 --wait --key-name vm3 --availability-zone nova:compute2
+
+        # Assign floating IP address to vm3
+        openstack server add floating ip vm3 $( openstack floating ip create ExtNet -c floating_ip_address -f value )
+
+        # Create VM5 
+        mkdir -p /root/keys
+        openstack keypair create vm5 > /root/keys/vm5
+        openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vm5 --port port-vm5 --wait --key-name vm5 --availability-zone nova:compute1
+
+        # Assign floating IP address to vm5
+        openstack server add floating ip vm5 $( openstack floating ip create ExtNet -c floating_ip_address -f value )
+
+        # VMS in NET2
+
+        # Create VM2
+        # mkdir -p /root/keys
+        openstack keypair create vm2 > /root/keys/vm2
+        openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vm2 --port port-vm2 --wait --key-name vm2 --availability-zone nova:compute2
+
+        # Assign floating IP address to vm2
+        openstack server add floating ip vm2 $( openstack floating ip create ExtNet -c floating_ip_address -f value )
+
+        # Create VM4
+        # mkdir -p /root/keys
+        openstack keypair create vm4 > /root/keys/vm4
+        openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vm4 --port port-vm4 --wait --key-name vm4 --availability-zone nova:compute1
+
+        # Assign floating IP address to vm4
+        openstack server add floating ip vm4 $( openstack floating ip create ExtNet -c floating_ip_address -f value )
+
+        # Create VM6
+        # mkdir -p /root/keys
+        openstack keypair create vm6 > /root/keys/vm6
+        openstack server create --flavor m1.tiny --image cirros-0.3.4-x86_64-vnx vm6 --port port-vm6 --wait --key-name vm6 --availability-zone nova:compute2
+
+        # Assign floating IP address to vm6
+        openstack server add floating ip vm6 $( openstack floating ip create ExtNet -c floating_ip_address -f value )
+
+    </exec>
