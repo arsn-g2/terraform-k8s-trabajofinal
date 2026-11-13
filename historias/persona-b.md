@@ -58,6 +58,8 @@ En `terraform/`:
 ### 🖥️ US-13 · ConfigMap con la plantilla HTML · 2 pts
 **Completed:** ⬜ · **Depende de:** [US-01](#us-01)
 
+📖 Punto de partida para US-13 y US-14: [guía del Deployment web](../docs/useful/web/guia-web.md), con lo que hicimos en la práctica 1.3 y plantillas de Terraform.
+
 En `web.tf`, crear `kubernetes_config_map_v1` con un `index.html` que tenga un marcador (por ejemplo, `__POD_NAME__`) (enunciado §3.1). Puede incluir el número de grupo. Guardar la plantilla en `terraform/templates/index.html.tpl` y cargarla con `file()` o `templatefile()`.
 
 🧪 `kubectl get cm -n <ns> -o yaml` muestra la plantilla con el marcador.

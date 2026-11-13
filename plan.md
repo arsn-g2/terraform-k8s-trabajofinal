@@ -108,7 +108,8 @@ La versión del enunciado del **5 de noviembre de 2026** y el entorno desplegado
     ├── datos-escenario.md      # A: datos del entorno (US-02)
     ├── useful/
     │   ├── multus/             # guía Multus/VLAN + ficheros de P1.3 (p13/)
-    │   └── metallb/            # guía MetalLB/Ingress + ficheros de P1.3 (p13/)
+    │   ├── metallb/            # guía MetalLB/Ingress + ficheros de P1.3 (p13/)
+    │   └── web/                # guía Deployment/ConfigMap + ficheros de P1.3 (p13/)
     └── capturas/               # C: evidencias para la memoria
 ```
 
