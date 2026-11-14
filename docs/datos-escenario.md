@@ -20,6 +20,19 @@ sudo vnx -f k8s_lab-terraform.xml --create         # VM LXC "terraform"
 sudo vnx -f k8s_lab-terraform.xml -x install-terraform
 ./bin/get-master-kubeconf                          # kubeconfig → ~/.kube/config del host
 ./bin/set-terraform-kubeconf                       # kubeconfig → VM terraform
+
+cd /mnt/tmp/k8s_lab-calico-v02/shared/
+git clone https://github.com/arsn-g2/terraform-k8s-trabajofinal.git
+
+# start the vlan and db, logs server
+cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal/vnx
+sudo vnx -f vnx-vlan.xml --create
+sudo vnx -f vnx-vm-bdd-logs.xml --create
+
+cd /mnt/tmp/k8s_lab-calico-v02
+code .
+
+
 ```
 
 Para trabajar con Terraform:
@@ -134,17 +147,41 @@ Los ficheros se editan desde el host; `terraform` se ejecuta dentro de la VM.
 
 ---
 
-## 8. Valores para `variables.tf`
 
-Nombres **propuestos** en [US-01](../historias/persona-b.md#us-01); el `variables.tf` actual todavía es el de P1.4 (solo `num_replicas`).
 
-| Variable | Valor |
-|---|---|
-| `group_number` | `2` → ruta `/servers-G2` ([D-001](../decisions.md)) |
-| `image_web` | `dgsgiros/nginx-ssh:latest` (usuario `webuser`, GID 1000) |
-| `image_admin` | `dgsgiros/admin-ssh:latest` (usuario `adminuser`, GID 1000) |
-| `host_user_lan_ip` | `10.10.20.2` |
-| `worker1_ip` | `10.10.10.11` |
-| `ingress_class` | `nginx` |
-| `vlan_master_if` | `e2` |
-| `vlan_id`, `vlan_subnet` | pendientes ([US-03](../historias/persona-c.md#us-03)) |
+---
+
+## 9. Escenario VNX complementario (LXC en `VlanNet`)
+
+Definido en `vnx/`, a partir de `k8s_lab-vms-vlan.xml` de la práctica 1.3 ([US-12](../historias/persona-a.md#us-12)). **Todavía no se ha desplegado**: los valores son los del XML, no medidos. Por ahora solo levanta la infraestructura básica, sin `exec` ni `filetree` (sin MariaDB, rsyslog ni claves SSH).
+
+Son dos escenarios independientes, cada uno con su `vnx --create`:
+
+| Fichero | `scenario_name` | Contenido | `automac offset` | Red de gestión (`vm_mgmt`) |
+|---|---|---|---|---|
+| `vnx/vnx-vlan.xml` | `tf-vlan` | `vlan-router` | 2 | `10.250.0.0/24` |
+| `vnx/vnx-vm-bdd-logs.xml` | `tf-bdd-logs` | `bbdd`, `logs` | 3 | `10.251.0.0/24` |
+
+El nombre, el offset de MACs y la red de gestión tienen que ser distintos entre sí y respecto a `k8s_lab-kubeadm` (offset 0, `192.168.50.0/24`) y `k8s_lab-terraform` (offset 1, `192.168.50.0/24`, offset de gestión 100). Si coinciden, VNX mezcla los escenarios, las IPs de gestión chocan o dos contenedores salen con la misma MAC en `virbr0`.
+
+| Máquina | Tipo | `VlanNet` (puerto *access*) | Otras interfaces |
+|---|---|---|---|
+| `vlan-router` | LXC, Ubuntu 20.04, `forwarding ip` | `eth1` tag **1000**, `10.1.2.1/24` · `eth2` tag **1001**, `10.1.3.1/24` | `eth9` en `virbr0` (DHCP) |
+| `bbdd` | LXC, Ubuntu 20.04 | `eth1` tag **1000**, `10.1.2.100/24` | `eth9` en `virbr0` (DHCP); ruta `10.1.0.0/16` vía `10.1.2.1` |
+| `logs` | LXC, Ubuntu 20.04 | `eth1` tag **1001**, `10.1.3.100/24` | `eth9` en `virbr0` (DHCP); ruta `10.1.0.0/16` vía `10.1.3.1` |
+
+- Los tags, las subredes y la necesidad del `vlan-router` son los de la plantilla y siguen **pendientes** ([US-03](../historias/persona-c.md#us-03)). Con una única VLAN compartida, como describe el enunciado, el router sobra.
+- **Cómo funciona la VLAN en `VlanNet`:** los puertos de los workers (`k8s-worker1-e2`, `k8s-worker2-e2`) no tienen tag, son *trunk*, así que los workers necesitan la subinterfaz `e2.<vlan>`. Los LXC tienen puertos *access* con tag: OVS pone y quita la etiqueta, y el contenedor ve tráfico sin etiquetar en `eth1`.
+- La interfaz de `virbr0` es la salida a Internet que necesitarán los `exec` para instalar paquetes (`apt`).
+- Rootfs: `/usr/share/vnx/filesystems/vnx_rootfs_lxc_ubuntu64-20.04-v025-vnxlab`. En el host también está la `24.04-v025-vnxlab`.
+
+Arranque y parada (el clúster tiene que estar levantado antes, porque crea `VlanNet`: en estos XML tiene `managed="no"`):
+
+```bash
+cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal/vnx
+sudo vnx -f vnx-vlan.xml --create
+sudo vnx -f vnx-vm-bdd-logs.xml --create
+sudo ovs-vsctl show                          # puertos de VlanNet y su tag
+sudo vnx -f vnx-vm-bdd-logs.xml --destroy    # parada
+sudo vnx -f vnx-vlan.xml --destroy
+```

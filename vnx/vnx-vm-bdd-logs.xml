@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+
+~~~~~~~~~~~~~~~~~~~~
+VNX Sample scenarios
+~~~~~~~~~~~~~~~~~~~~
+
+Name:        vnx-vm-bdd-logs
+Description:
+Deployment of the LXC containers bbdd (database server) and logs (log server) on VlanNet.
+Taken from /mnt/tmp/k8s_lab-calico-v02/k8s_lab-vms-vlan.xml, and updated for the Terraform+K8s Final Project.
+Companion scenario: vnx-vlan.xml (vlan-router).
+
+ARSN
+Universidad Politecnica de Madrid
+SPAIN
+
+-->
+
+<vnx xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="/usr/share/xml/vnx/vnx-2.00.xsd">
+  <global>
+    <version>2.0</version>
+    <scenario_name>tf-bdd-logs</scenario_name>
+    <automac offset="3"/>
+    <vm_mgmt type="private" network="10.251.0.0" mask="24" offset="16">
+       <host_mapping />
+    </vm_mgmt>
+    <vm_defaults>
+        <console id="0" display="no"/>
+        <console id="1" display="yes"/>
+    </vm_defaults>
+  </global>
+
+  <!-- VlanNet is created by the k8s scenario (k8s_lab-calico.xml): start the cluster first -->
+  <net name="VlanNet"  mode="openvswitch" managed="no"/>
+  <net name="virbr0"  mode="virtual_bridge" managed="no"/>
+
+  <vm name="bbdd" type="lxc" exec_mode="lxc-attach" arch="x86_64">
+    <filesystem type="cow">/usr/share/vnx/filesystems/vnx_rootfs_lxc_ubuntu64-20.04-v025-vnxlab</filesystem>
+    <if id="1" net="VlanNet">
+      <vlan>
+          <tag id='1000'/>
+      </vlan>
+      <ipv4>10.1.2.100/24</ipv4>
+    </if>
+    <if id="9" net="virbr0">
+      <ipv4>dhcp</ipv4>
+    </if>
+    <route type="ipv4" gw="10.1.2.1">10.1.0.0/16</route>
+  </vm>
+
+  <vm name="logs" type="lxc" exec_mode="lxc-attach" arch="x86_64">
+    <filesystem type="cow">/usr/share/vnx/filesystems/vnx_rootfs_lxc_ubuntu64-20.04-v025-vnxlab</filesystem>
+    <if id="1" net="VlanNet">
+      <vlan>
+          <tag id='1001'/>
+      </vlan>
+      <ipv4>10.1.3.100/24</ipv4>
+    </if>
+    <if id="9" net="virbr0">
+      <ipv4>dhcp</ipv4>
+    </if>
+    <route type="ipv4" gw="10.1.3.1">10.1.0.0/16</route>
+  </vm>
+
+</vnx>
