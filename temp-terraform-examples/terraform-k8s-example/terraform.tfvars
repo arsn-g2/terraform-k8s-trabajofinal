@@ -1,1 +1,1 @@
-num_replicas = 5
+num_replicas = 3

@@ -1,7 +1,13 @@
-variable "num_replicas" {
+variable "web_num_replicas" {
   description = "Número de réplicas del Deployment web (el enunciado pide 3)"
   type        = number
   default     = 3
+}
+
+variable "admin_num_replicas" {
+  description = "Número de réplicas del Deployment web (el enunciado pide 3)"
+  type        = number
+  default     = 1
 }
 
 # Valores del escenario: ver docs/datos-escenario.md §8

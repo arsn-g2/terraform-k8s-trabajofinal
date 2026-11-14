@@ -1,1 +1,1 @@
-num_replicas = 5
+web_num_replicas = 3

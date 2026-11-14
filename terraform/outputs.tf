@@ -1,6 +1,7 @@
-output "num_replicas" {
-  value = var.num_replicas
+output "web_num_replicas" {
+  value = var.web_num_replicas
 }
+
 
 # Valores del escenario (docs/datos-escenario.md §8)
 
