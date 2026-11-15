@@ -1,3 +1,4 @@
+# this file is an example, not part of the project. this file will be deleted
 # Maquinas virtuales del escenario 2.1, creadas con el modulo ./modules/vm
 # Cada VM: puerto con IP fija, keypair propio, zona de disponibilidad e IP flotante
 

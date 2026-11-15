@@ -1,3 +1,4 @@
+# this file is an example, not part of the project. this file will be deleted
 output "network_ids" {
   description = "IDs de las redes internas"
   value = {

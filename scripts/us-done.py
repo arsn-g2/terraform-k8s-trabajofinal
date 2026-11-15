@@ -65,6 +65,8 @@ def main() -> None:
             print(f"  nothing changed (US-{num} does not exist or is already {new})")
         else:
             print(f"  {n} marks updated")
+            if not undo:
+                print(f"  reminder: update the US-{num} section of memoria.md and its ⟪PENDIENTE⟫ markers")
 
 
 if __name__ == "__main__":

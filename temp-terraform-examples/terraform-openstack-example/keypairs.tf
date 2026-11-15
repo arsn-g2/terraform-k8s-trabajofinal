@@ -1,3 +1,4 @@
+# this file is an example, not part of the project. this file will be deleted
 # Creacion dinamica de keypairs desde Terraform (sustituye a create-keypairs.sh)
 # Se crea un keypair por cada VM definida en local.vms (vms.tf).
 # OpenStack genera el par de claves; la clave privada se guarda en ./keys/<nombre>

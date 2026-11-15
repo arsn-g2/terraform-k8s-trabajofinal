@@ -1,3 +1,4 @@
+# this file is an example, not part of the project. this file will be deleted
 resource "kubernetes_network_policy_v1" "tester_egress" {
   metadata {
     name      = "tester-egress"

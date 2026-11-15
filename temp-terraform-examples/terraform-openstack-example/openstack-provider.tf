@@ -1,3 +1,4 @@
+# this file is an example, not part of the project. this file will be deleted
 # Define required providers
 terraform {
 required_version = ">= 0.14.0"

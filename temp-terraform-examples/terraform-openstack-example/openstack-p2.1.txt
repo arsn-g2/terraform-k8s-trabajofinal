@@ -1,3 +1,4 @@
+# this file is an example, not part of the project. this file will be deleted
 <!-- 
          CREATE P2.1
          sudo vnx -f openstack_lab.xml -v -x create-scenario-p21

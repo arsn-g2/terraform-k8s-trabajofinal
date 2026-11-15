@@ -1,3 +1,4 @@
+# this file is an example, not part of the project. this file will be deleted
 resource "kubernetes_network_policy_v1" "nginx_ingress" {
   metadata {
     name      = "nginx-ingress"

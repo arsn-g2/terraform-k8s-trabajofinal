@@ -1,3 +1,4 @@
+# this file is an example, not part of the project. this file will be deleted
 data "kubernetes_resources" "nginx_pods" {
   api_version    = "v1"
   kind           = "Pod"

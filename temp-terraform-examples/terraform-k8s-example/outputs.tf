@@ -1,3 +1,4 @@
+# this file is an example, not part of the project. this file will be deleted
 output "deployment_name" {
   value = kubernetes_deployment_v1.web_servers.metadata[0].name
 }

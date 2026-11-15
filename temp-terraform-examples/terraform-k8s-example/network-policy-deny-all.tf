@@ -1,3 +1,4 @@
+# this file is an example, not part of the project. this file will be deleted
 resource "kubernetes_network_policy_v1" "default_deny_all" {
   metadata {
     name      = "default-deny-all"

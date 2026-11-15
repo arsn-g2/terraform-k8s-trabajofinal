@@ -1,4 +1,5 @@
 #!/bin/bash
+# this file is an example, not part of the project. this file will be deleted
 # Crea los keypairs vm1..vm6 usados en el apartado2.4
 # Ejecutar en el host:
 #   source /mnt/tmp/openstack_lab-antelope_4n_classic_ovs-v04/bin/admin-openrc.sh

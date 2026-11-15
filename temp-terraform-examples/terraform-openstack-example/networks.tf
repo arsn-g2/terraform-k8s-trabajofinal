@@ -1,3 +1,4 @@
+# this file is an example, not part of the project. this file will be deleted
 # Redes internas del escenario 2.1, creadas con el modulo ./modules/network
 
 module "net1" {

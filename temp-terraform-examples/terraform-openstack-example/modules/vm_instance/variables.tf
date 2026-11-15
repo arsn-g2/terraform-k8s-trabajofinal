@@ -1,3 +1,4 @@
+# this file is an example, not part of the project. this file will be deleted
 variable "name" {
     description = "Name of the VM instance"
     type = string

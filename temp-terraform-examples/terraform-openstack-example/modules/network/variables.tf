@@ -1,3 +1,4 @@
+# this file is an example, not part of the project. this file will be deleted
 variable "network_name" {
   description = "Nombre de la red"
   type        = string

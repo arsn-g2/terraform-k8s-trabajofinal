@@ -1,3 +1,4 @@
+# this file is an example, not part of the project. this file will be deleted
 locals {
   web_labels = {
     app = "nginx"
