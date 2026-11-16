@@ -23,7 +23,7 @@
 | 1 | [US-19 · Investigación: Multus, tipo de NAD e IPAM](#us-19) | 3 | ⛔ | ✅ |
 | 1 | [US-10 · Subinterfaces VLAN en los workers](#us-10) | 3 | | ✅ |
 | 1 | [US-11 · NetworkAttachmentDefinition](#us-11) | 3 | ⛔ 🤝 | ⬜ |
-| 1 | [US-12 · Escenario VNX con LXC](#us-12) | 5 | | ⬜ |
+| 1 | [US-12 · Escenario VNX con LXC](#us-12) | 5 | | ✅ |
 | 2 | [US-20 · MariaDB en el LXC `bbdd`](#us-20) | 5 | 🤝 🔀 | ⬜ |
 | 2 | [US-21 · Servidor de logs](#us-21) | 3 | | ⬜ |
 | 3 | [US-33 · Validar el tráfico de la VLAN con las políticas](#us-33) | 3 | 🔀 | ⬜ |
@@ -142,7 +142,7 @@ Pasar a Terraform lo que salió de la investigación de [US-19](#us-19). En `mul
 
 <a id="us-12"></a>
 ### 🌐 US-12 · Escenario VNX con LXC de BBDD y logs · 5 pts
-**Completed:** ⬜ · **Depende de:** [US-02](#us-02), [US-03](persona-c.md#us-03)
+**Completed:** ✅ · **Depende de:** [US-02](#us-02), [US-03](persona-c.md#us-03)
 
 Copiar `../../k8s_lab-vms-vlan.xml` (práctica 1.3) a `vnx/` y dejar dos contenedores LXC (`bbdd` y `logs`) conectados a `VlanNet` con el `<vlan><tag id="<vlan>"/></vlan>` acordado y las IPs del plan de direccionamiento de [US-11](#us-11) (enunciado §2.6). Quitar las VMs de ejemplo (`vmA2`, `vmB2`, `vlan-router`) que no hagan falta.
 
