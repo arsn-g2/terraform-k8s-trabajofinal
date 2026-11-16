@@ -25,7 +25,7 @@ Ya no hace falta esperar a nadie para el número de grupo ni las imágenes: el g
 | 0 | [US-01 · Esqueleto de Terraform](#us-01) | 3 | ⛔ | ✅ |
 | 1 | [US-13 · ConfigMap con la plantilla HTML](#us-13) | 2 | | ✅ |
 | 1 | [US-14 · Deployment web con página personalizada](#us-14) | 5 | 🤝 | ✅ |
-| 1 | [US-15 · Service ClusterIP e Ingress](#us-15) | 3 | ⚠️ | ⬜ |
+| 1 | [US-15 · Service ClusterIP e Ingress](#us-15) | 3 | ⚠️ | ✅ |
 | 2 | [US-22 · Interfaz Multus en los Pods web](#us-22) | 3 | 🔀 | ⬜ |
 | 2 | [US-23 · Acceso a MariaDB desde los web y el admin](#us-23) | 3 | 🔀 | ⬜ |
 | 3 | [US-31 · Acceso a los web solo desde el Ingress Controller](#us-31) | 5 | | ⬜ |
@@ -79,7 +79,7 @@ En `web.tf`, crear `kubernetes_config_map_v1` con un `index.html` que tenga un m
 
 <a id="us-15"></a>
 ### 🖥️ US-15 · Service ClusterIP e Ingress · 3 pts · ⚠️
-**Completed:** ⬜ · **Depende de:** [US-14](#us-14)
+**Completed:** ✅ · **Depende de:** [US-14](#us-14)
 
 - `kubernetes_service_v1` de tipo `ClusterIP`, `port = 8080`, `target_port = 80`, con selector `app = web` (enunciado §4.1).
 - `kubernetes_ingress_v1` con `ingress_class_name = "nginx"` y ruta `"/servers-G${var.group_number}"` (= `/servers-G2`) hacia el Service en el puerto 8080 (enunciado §4.3).

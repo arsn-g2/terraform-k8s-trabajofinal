@@ -100,14 +100,13 @@ resource "kubernetes_service_v1" "web_service" {
     namespace = kubernetes_namespace_v1.namespace.metadata[0].name
   }
   spec {
-    type = "NodePort"
-
+    type = "ClusterIP"
     selector = local.web_labels # app = "web"
 
     port {
-      port        = 80
+      port        = 8080
       target_port = 80
-      node_port   = 30001
+      # node_port   = 30001
     }
 
   }

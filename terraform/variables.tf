@@ -24,6 +24,12 @@ variable "group_number" {
   default     = 2
 }
 
+variable "g2_ingress_path" {
+  description = "Ruta del Ingress para el grupo 2 (D-001)"
+  type        = string
+  default     = "/servers-G2"
+}
+
 variable "image_web" {
   description = "Imagen de los servidores web (usuario webuser, GID 1000)"
   type        = string
@@ -58,11 +64,11 @@ variable "image_admin" {
 #   }
 # }
 #
-# variable "ingress_class" {
-#   description = "IngressClass del Ingress Controller del escenario"
-#   type        = string
-#   default     = "nginx"
-# }
+variable "ingress_class" {
+  description = "IngressClass del Ingress Controller del escenario -> kubectl get ingressclass"
+  type        = string
+  default     = "nginx"
+}
 #
 # variable "vlan_master_if" {
 #   description = "Interfaz de los workers conectada a VlanNet (sobre ella va la subinterfaz <if>.<vlan_id>)"
