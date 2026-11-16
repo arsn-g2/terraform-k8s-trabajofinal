@@ -354,4 +354,4 @@ Los rangos no se solapan: la IP del admin y las de los LXC quedan fuera del rang
 - [x] Escribir [D-005](../decisions.md) **en inglés**, con la plantilla del fichero, y pasarla a *Accepted*.
 - [ ] Elegir la versión fija de `whereabouts` (tag del repositorio y de la imagen) para [US-11](../historias/persona-a.md#us-11).
 - [ ] Proponer a C la VLAN 1000 y `10.1.2.0/24` para cerrar [US-03](../historias/persona-c.md#us-03).
-- [ ] Borrar el namespace `multus-poc` (criterio 🧪 de [US-19](../historias/persona-a.md#us-19)).
+- [x] Borrar el namespace `multus-poc` (criterio 🧪 de [US-19](../historias/persona-a.md#us-19)).
