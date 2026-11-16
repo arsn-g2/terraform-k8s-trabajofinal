@@ -23,7 +23,7 @@ Ya no hace falta esperar a nadie para el número de grupo ni las imágenes: el g
 | Fase | Historia | Pts | Marcas | Completed |
 |---|---|---|---|---|
 | 0 | [US-01 · Esqueleto de Terraform](#us-01) | 3 | ⛔ | ✅ |
-| 1 | [US-13 · ConfigMap con la plantilla HTML](#us-13) | 2 | | ⬜ |
+| 1 | [US-13 · ConfigMap con la plantilla HTML](#us-13) | 2 | | ✅ |
 | 1 | [US-14 · Deployment web con página personalizada](#us-14) | 5 | 🤝 | ⬜ |
 | 1 | [US-15 · Service ClusterIP e Ingress](#us-15) | 3 | ⚠️ | ⬜ |
 | 2 | [US-22 · Interfaz Multus en los Pods web](#us-22) | 3 | 🔀 | ⬜ |
@@ -56,7 +56,7 @@ En `terraform/`:
 
 <a id="us-13"></a>
 ### 🖥️ US-13 · ConfigMap con la plantilla HTML · 2 pts
-**Completed:** ⬜ · **Depende de:** [US-01](#us-01)
+**Completed:** ✅ · **Depende de:** [US-01](#us-01)
 
 📖 Punto de partida para US-13 y US-14: [guía del Deployment web](../docs/useful/web/guia-web.md), con lo que hicimos en la práctica 1.3 y plantillas de Terraform.
 

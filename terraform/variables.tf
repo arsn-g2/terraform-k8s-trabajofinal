@@ -1,3 +1,15 @@
+variable "group_number" {
+  description = "Número de grupo de prácticas. La ruta del Ingress es /servers-G<group_number> (D-001)"
+  type        = number
+  default     = 2
+}
+
+variable "namespace" {
+  description = "Namespace de los recursos del escenario"
+  type        = string
+  default     = "G2-workshop"
+}
+
 variable "web_num_replicas" {
   description = "Número de réplicas del Deployment web (el enunciado pide 3)"
   type        = number
