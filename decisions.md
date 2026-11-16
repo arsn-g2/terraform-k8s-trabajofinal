@@ -53,9 +53,25 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 - **Consequences:** Secret data still ends up in the tfstate, so the state must stay out of git.
 
 ### D-005 VLAN IPAM
-- **Status:** Pending (US-19)
-- **Context:** `host-local` IPAM can give the same IP to Pods on different workers. `whereabouts` is **not** installed in the lab (checked 2026-11-13); available CNI plugins include `macvlan`, `vlan`, `host-local`, `static` and `dhcp`.
-- **Options:** `static` for the admin plus, for the web Deployment: install `whereabouts`; `dhcp` IPAM with dnsmasq in an LXC; or per-node `host-local` NADs with node affinity.
+- **Date / author:** 2026-11-16 / Persona A
+- **Status:** to be accepted by the rest of the group.
+- **Context:** the web servers are a Deployment of 3 replicas, so every Pod shares one template and one Multus annotation, and the replicas land on both workers. The P1.3 NAD uses `static` IPAM with the IP in each Pod's annotation, which a Deployment cannot do. `whereabouts` is not installed in the lab (checked 2026-11-13).
+- **Options considered:**
+  - `static` (as in P1.3): tested; the Pods never start (`IPAM plugin returned missing IP config`).
+  - `host-local`: tested; each worker keeps its own counter, so Pods on different workers get the same IP (10.1.2.10 and .11 on both).
+  - `whereabouts`: tested; one cluster-wide `IPPool` stored in the Kubernetes API; 4 replicas got 4 different IPs across both workers.
+  - `dhcp` with dnsmasq in an LXC: not tested; needs the CNI `dhcp` daemon on every worker plus a DHCP server on the VLAN.
+  - one `host-local` NAD per node with node affinity: discarded; a Deployment has a single annotation for all its replicas.
+- **Decision:** two NADs on VLAN 1000 (`10.1.2.0/24`), both `macvlan` in `bridge` mode on `e2.1000`:
+  - admin: `static` IPAM with `"capabilities": {"ips": true}` and its fixed IP (`10.1.2.5`) in the Pod annotation;
+  - web Deployment: `whereabouts` IPAM, range `10.1.2.10`–`10.1.2.50`.
+  The LXC keep fixed IPs in the VNX XML (`bbdd` 10.1.2.100, `logs` 10.1.2.101).
+- **Why:** it is the only tested option that gives unique IPs to replicas on different workers. Its registry lives in the API, like Calico's IPAM for `eth0`. It installs with one `kubectl apply`, and the nodes can pull its image. Evidence: `docs/investigacion-multus.md` §4–§6 and §8.
+- **Consequences:**
+  - `whereabouts` must be installed on every lab start-up, before the web Pods (US-11). Pin a version instead of the `:latest` image.
+  - Fixed IPs (admin, LXC) must stay outside the whereabouts range, because whereabouts does not know about them.
+  - NetworkPolicies do not filter `net1` (§7): traffic on the VLAN is protected only by SSH keys and DB users (US-33).
+  - Files: `terraform/multus.tf` (two `kubernetes_manifest` NADs), `scripts/setup-vlan-workers.sh`, the VNX XML (one VLAN, no `vlan-router`).
 
 ### D-006 Log server function
 - **Status:** Proposed (US-21)

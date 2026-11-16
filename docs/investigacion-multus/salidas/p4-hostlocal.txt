@@ -1,0 +1,29 @@
+### Prueba 4 · NAD host-local en un Deployment de 4 réplicas · 2026-11-16 07:35:48
+NAME                             READY   STATUS    RESTARTS   AGE   IP              NODE          NOMINATED NODE   READINESS GATES
+poc-hostlocal-56dc7888d4-4jxnv   1/1     Running   0          29s   172.16.126.2    k8s-worker2   <none>           <none>
+poc-hostlocal-56dc7888d4-gnkgm   1/1     Running   0          29s   172.16.194.69   k8s-worker1   <none>           <none>
+poc-hostlocal-56dc7888d4-m4kwh   1/1     Running   0          29s   172.16.126.1    k8s-worker2   <none>           <none>
+poc-hostlocal-56dc7888d4-z76rg   1/1     Running   0          29s   172.16.194.70   k8s-worker1   <none>           <none>
+
+pod  nodo  IP de net1
+pod/poc-hostlocal-56dc7888d4-4jxnv k8s-worker2 10.1.2.11/24
+pod/poc-hostlocal-56dc7888d4-gnkgm k8s-worker1 10.1.2.10/24
+pod/poc-hostlocal-56dc7888d4-m4kwh k8s-worker2 10.1.2.10/24
+pod/poc-hostlocal-56dc7888d4-z76rg k8s-worker1 10.1.2.11/24
+
+### Prueba 4 · reservas de host-local en cada worker
+--- k8s-worker1
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+vlan1000-hostlocal
+10.1.2.10
+10.1.2.11
+last_reserved_ip.0
+lock
+--- k8s-worker2
+Warning: Permanently added 'k8s-worker2' (ED25519) to the list of known hosts.
+vlan1000-hostlocal
+10.1.2.10
+10.1.2.11
+last_reserved_ip.0
+lock
+
