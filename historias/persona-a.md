@@ -20,7 +20,7 @@
 | Fase | Historia | Pts | Marcas | Completed |
 |---|---|---|---|---|
 | 0 | [US-02 · Levantar el escenario y recopilar datos](#us-02) | 2 | | ✅ |
-| 1 | [US-19 · Investigación: Multus, tipo de NAD e IPAM](#us-19) | 3 | ⛔ | ⬜ |
+| 1 | [US-19 · Investigación: Multus, tipo de NAD e IPAM](#us-19) | 3 | ⛔ | ✅ |
 | 1 | [US-10 · Subinterfaces VLAN en los workers](#us-10) | 3 | | ⬜ |
 | 1 | [US-11 · NetworkAttachmentDefinition](#us-11) | 3 | ⛔ 🤝 | ⬜ |
 | 1 | [US-12 · Escenario VNX con LXC](#us-12) | 5 | | ⬜ |
@@ -83,7 +83,7 @@ sudo vnx -f k8s_lab-terraform.xml -x install-terraform
 
 <a id="us-19"></a>
 ### 🌐 US-19 · Investigación: Multus, tipo de NAD e IPAM · 3 pts · ⛔
-**Completed:** ⬜ · **Depende de:** [US-02](#us-02) · **Bloquea a:** [US-11](#us-11)
+**Completed:** ✅ · **Depende de:** [US-02](#us-02) · **Bloquea a:** [US-11](#us-11)
 
 *Spike* de investigación para cuando empiece el trabajo de la VLAN. Se puede hacer en cuanto el entorno esté levantado: no necesita Terraform ni los LXC. El resultado son decisiones, no código de entrega.
 
