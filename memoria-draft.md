@@ -54,11 +54,22 @@ En esta fase cada uno trabajó en paralelo sobre su área, en su propio archivo 
 
 ### 4.2 Aplicación web
 
-**ConfigMap (US-13).** Definimos la plantilla `index.html` en un ConfigMap.
+Detalle y capturas en [docs/memoria/fase1-b.md](docs/memoria/fase1-b.md).
 
-**Deployment web (US-14).** Desplegamos tres réplicas de `dgsgiros/nginx-ssh:latest`. Un initContainer (D-003) toma la plantilla, escribe en ella el nombre del Pod y deja el resultado en un `emptyDir` compartido con Nginx, de modo que cada réplica muestra su propio nombre.
+**ConfigMap (US-13).** Escribimos la plantilla `templates/index.html.tpl` y la cargamos en un ConfigMap con `templatefile()`. Terraform sustituye el número de grupo durante el `plan`, y el marcador `__POD_NAME__` llega intacto al ConfigMap para que lo rellene cada Pod.
 
-**Service e Ingress (US-15).** Expusimos los servidores con un Service `ClusterIP` (8080→80) y un Ingress de clase `nginx` en la ruta `/servers-G2`, con la anotación `rewrite-target`. Probamos con `curl` que las peticiones se balancean entre los tres Pods.
+**Deployment web (US-14).** Desplegamos tres réplicas de `dgsgiros/nginx-ssh:latest` con la label `app=web`. En cada Pod, un contenedor *sidecar* (D-009):
+- recibe el nombre del Pod por la Downward API;
+- aplica `sed` sobre la plantilla, montada en solo lectura;
+- escribe el resultado en un `emptyDir` compartido con Nginx, que lo sirve desde `/usr/share/nginx/html`;
+- queda vivo con `sleep infinity` para que el kubelet no lo reinicie.
+
+Comprobamos que cada réplica muestra su propio nombre y que un Pod recreado muestra el nuevo.
+
+**Service e Ingress (US-15).** Expusimos los servidores con un Service `ClusterIP` (8080→80) y un Ingress de clase `nginx` en la ruta `/servers-G2`, con la anotación `rewrite-target: /`. Desde el host accedimos por la IP de MetalLB (`10.10.10.20`) y por el NodePort del controller, y comprobamos tres cosas:
+- las peticiones se balancean entre los tres Pods;
+- solo las rutas `/servers-G2*` devuelven 200;
+- al borrar un Pod, su sustituto entra solo en los endpoints del Service.
 
 ### 4.3 Seguridad y administración
 
@@ -120,7 +131,7 @@ El registro completo está en [decisions.md](decisions.md). Las más relevantes:
 |---|---|
 | D-001 | Grupo 2, ruta `/servers-G2` |
 | D-002 | Namespace dedicado en lugar de `default` |
-| D-003 | initContainer para personalizar `index.html` |
+| D-009 | Contenedor sidecar para personalizar `index.html` (sustituye a D-003, initContainer) |
 | D-004 | Solo autenticación por clave, con dos pares SSH |
 | D-005 | IPAM de la VLAN ⟪PENDIENTE⟫ |
 | D-006 | rsyslog en el puerto 514 como servidor de logs |
@@ -134,6 +145,7 @@ El registro completo está en [decisions.md](decisions.md). Las más relevantes:
 ⟪PENDIENTE: cada área agrega los problemas que encontró y cómo los resolvió. Candidatos ya conocidos:⟫
 
 - MetalLB arranca sin `IPAddressPool`: volvimos a correr `config_metallb` y, mientras tanto, probamos el Ingress por NodePort.
+- En el primer despliegue del Deployment web, el `emptyDir` de Nginx se montó en una ruta provisional: el Pod arrancaba, pero Nginx no servía la página generada. Lo detectamos con `kubectl describe pod`, localizamos la raíz real con `grep -r root /etc/nginx/` y corregimos el `mount_path`.
 - Las subinterfaces VLAN se pierden cuando se recrea el escenario: las creamos con un script idempotente.
 - IPs duplicadas en la VLAN con `host-local` (D-005).
 - El contenido de los Secrets queda en el `tfstate`: por eso el estado nunca se sube al repositorio.
