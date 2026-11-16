@@ -1,4 +1,4 @@
-da# 🌐 Investigación: Multus, tipo de NAD e IPAM
+# 🌐 Investigación: Multus, tipo de NAD e IPAM
 
 ⬅️ [Volver al plan](../plan.md) · Historia: [US-19](../historias/persona-a.md#us-19) · Relacionado: [guía de Multus](useful/multus/guia-multus.md) · [datos del escenario §4](datos-escenario.md#4-multus-y-red-vlan) · [D-005](../decisions.md)
 
@@ -349,9 +349,9 @@ Los rangos no se solapan: la IP del admin y las de los LXC quedan fuera del rang
 - [x] Prueba 5: `whereabouts` ([§6](#6-prueba-5-ipam-whereabouts)).
 - [x] Prueba 6: NetworkPolicies y `net1` ([§7](#7-prueba-6-las-networkpolicies-filtran-net1)).
 - [x] Prueba 7: la NAD con Terraform ([§8](#8-prueba-7-la-nad-con-terraform)).
-- [ ] `terraform destroy` de [`terraform-nad/`](investigacion-multus/terraform-nad/) y borrar el Deployment `poc-tf`.
+- [x] `terraform destroy` de [`terraform-nad/`](investigacion-multus/terraform-nad/) y borrar el Deployment `poc-tf`.
 - [x] IPAM de los web y plan de direccionamiento ([§9](#9-decisiones)).
-- [ ] Escribir [D-005](../decisions.md) **en inglés**, con la plantilla del fichero, y pasarla a *Accepted*.
+- [x] Escribir [D-005](../decisions.md) **en inglés**, con la plantilla del fichero, y pasarla a *Accepted*.
 - [ ] Elegir la versión fija de `whereabouts` (tag del repositorio y de la imagen) para [US-11](../historias/persona-a.md#us-11).
 - [ ] Proponer a C la VLAN 1000 y `10.1.2.0/24` para cerrar [US-03](../historias/persona-c.md#us-03).
 - [ ] Borrar el namespace `multus-poc` (criterio 🧪 de [US-19](../historias/persona-a.md#us-19)).

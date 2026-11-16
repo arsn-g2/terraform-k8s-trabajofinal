@@ -54,7 +54,7 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 
 ### D-005 VLAN IPAM
 - **Date / author:** 2026-11-16 / Persona A
-- **Status:** to be accepted by the rest of the group.
+- **Status:** Proposed.
 - **Context:** the web servers are a Deployment of 3 replicas, so every Pod shares one template and one Multus annotation, and the replicas land on both workers. The P1.3 NAD uses `static` IPAM with the IP in each Pod's annotation, which a Deployment cannot do. `whereabouts` is not installed in the lab (checked 2026-11-13).
 - **Options considered:**
   - `static` (as in P1.3): tested; the Pods never start (`IPAM plugin returned missing IP config`).
