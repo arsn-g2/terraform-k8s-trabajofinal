@@ -21,7 +21,7 @@
 |---|---|---|---|---|
 | 0 | [US-02 · Levantar el escenario y recopilar datos](#us-02) | 2 | | ✅ |
 | 1 | [US-19 · Investigación: Multus, tipo de NAD e IPAM](#us-19) | 3 | ⛔ | ✅ |
-| 1 | [US-10 · Subinterfaces VLAN en los workers](#us-10) | 3 | | ⬜ |
+| 1 | [US-10 · Subinterfaces VLAN en los workers](#us-10) | 3 | | ✅ |
 | 1 | [US-11 · NetworkAttachmentDefinition](#us-11) | 3 | ⛔ 🤝 | ⬜ |
 | 1 | [US-12 · Escenario VNX con LXC](#us-12) | 5 | | ⬜ |
 | 2 | [US-20 · MariaDB en el LXC `bbdd`](#us-20) | 5 | 🤝 🔀 | ⬜ |
@@ -115,7 +115,7 @@ sudo vnx -f k8s_lab-terraform.xml -x install-terraform
 
 <a id="us-10"></a>
 ### 🌐 US-10 · Subinterfaces VLAN en los workers · 3 pts
-**Completed:** ⬜ · **Depende de:** [US-02](#us-02), [US-03](persona-c.md#us-03)
+**Completed:** ✅ · **Depende de:** [US-02](#us-02), [US-03](persona-c.md#us-03)
 
 Script `scripts/setup-vlan-workers.sh` que, en `k8s-worker1` y `k8s-worker2` (por SSH como `root`), cree la subinterfaz VLAN sobre **`e2`**, siguiendo la práctica 1.3 (enunciado §2.2):
 

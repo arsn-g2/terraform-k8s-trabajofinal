@@ -52,7 +52,7 @@ Fase 4  🔵 Verificación y entrega ►  B: US-40   A: US-41 🔀   C: US-42   
 | Historia | Persona | Pts | Depende de | Marcas | Completed |
 |---|---|---|---|---|---|
 | [US-19 · Investigación: Multus, tipo de NAD e IPAM](historias/persona-a.md#us-19) | 🌐 A | 3 | [US-02](historias/persona-a.md#us-02) | ⛔ | ✅ |
-| [US-10 · Subinterfaces VLAN en los workers](historias/persona-a.md#us-10) | 🌐 A | 3 | [US-02](historias/persona-a.md#us-02), [US-03](historias/persona-c.md#us-03) | | ⬜ |
+| [US-10 · Subinterfaces VLAN en los workers](historias/persona-a.md#us-10) | 🌐 A | 3 | [US-02](historias/persona-a.md#us-02), [US-03](historias/persona-c.md#us-03) | | ✅ |
 | [US-11 · NetworkAttachmentDefinition (Multus)](historias/persona-a.md#us-11) | 🌐 A | 3 | [US-10](historias/persona-a.md#us-10), [US-19](historias/persona-a.md#us-19) | ⛔ 🤝 | ⬜ |
 | [US-12 · Escenario VNX con LXC de BBDD y logs](historias/persona-a.md#us-12) | 🌐 A | 5 | [US-02](historias/persona-a.md#us-02), [US-03](historias/persona-c.md#us-03) | | ⬜ |
 | [US-13 · ConfigMap con la plantilla HTML](historias/persona-b.md#us-13) | 🖥️ B | 2 | [US-01](historias/persona-b.md#us-01) | | ⬜ |
