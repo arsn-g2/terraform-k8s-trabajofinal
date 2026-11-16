@@ -1,13 +1,7 @@
-variable "group_number" {
-  description = "Número de grupo de prácticas. La ruta del Ingress es /servers-G<group_number> (D-001)"
-  type        = number
-  default     = 2
-}
-
 variable "namespace" {
   description = "Namespace de los recursos del escenario"
   type        = string
-  default     = "G2-workshop"
+  default     = "g2-workshop"
 }
 
 variable "web_num_replicas" {
@@ -24,11 +18,11 @@ variable "admin_num_replicas" {
 
 # Valores del escenario: ver docs/datos-escenario.md §8
 
-# variable "group_number" {
-#   description = "Número de grupo de prácticas. La ruta del Ingress es /servers-G<group_number> (D-001)"
-#   type        = number
-#   default     = 2
-# }
+variable "group_number" {
+  description = "Número de grupo de prácticas. La ruta del Ingress es /servers-G<group_number> (D-001)"
+  type        = number
+  default     = 2
+}
 
 variable "image_web" {
   description = "Imagen de los servidores web (usuario webuser, GID 1000)"

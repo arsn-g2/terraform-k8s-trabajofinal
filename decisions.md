@@ -35,7 +35,7 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 - **Why:** isolation from P1.4 leftovers, and `terraform destroy` / deny-all only affect our resources.
 
 ### D-003 Page generation: initContainer (Option B)
-- **Status:** Proposed
+- **Status:** Superseded by D-009
 - **Context:** PDF §3.2 allows either a sidecar or an initContainer.
 - **Decision:** initContainer.
 - **Why:** the Pod name never changes during the Pod's life, so generating the page once at start-up is enough. It is simpler, uses no long-running extra container, and the page exists before nginx starts.
@@ -73,3 +73,12 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 - **Decision:** we follow the 5 Nov version (`ARSN-trabajo-final-26-27.pdf`). The old one is in git history only.
 - **Why:** it is the latest, and it resolves the key-direction ambiguity we had flagged.
 - **Consequences:** D-004, US-03, US-16 and US-17 were updated. Note: the new §2.4 says "seguir las recomendaciones del paso 4", which refers to itself; we read it as step 5.
+
+### D-009 Page generation: sidecar container (Option A)
+- **Date / author:** 2026-11-16 / B
+- **Status:** Proposed
+- **Context:** PDF §3.2 allows either a sidecar (Option A) or an initContainer (Option B). D-003 had proposed B.
+- **Options considered:** A, a second `container` in the Pod that writes `index.html` into a shared `emptyDir` and stays running; B, an `init_container` that writes it once and exits.
+- **Decision:** Option A (sidecar).
+- **Why:** to learn and show the sidecar pattern (containers sharing a volume, parallel lifecycle), which is also what you need when content changes while the Pod runs. B would be enough for a value that never changes, such as the Pod name.
+- **Consequences:** the sidecar must stay alive after writing the page (for example `sleep infinity`); otherwise the kubelet restarts it and the Pod goes into `CrashLoopBackOff`. Nginx can start before the page exists, so the first requests may return 403/404 for a moment. The sidecar runs for the Pod's whole life. US-14 (`historias/persona-b.md`) and `docs/useful/web/guia-web.md` §3.3 describe Option B and need updating.
