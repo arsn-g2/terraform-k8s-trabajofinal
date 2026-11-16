@@ -24,7 +24,7 @@ Ya no hace falta esperar a nadie para el número de grupo ni las imágenes: el g
 |---|---|---|---|---|
 | 0 | [US-01 · Esqueleto de Terraform](#us-01) | 3 | ⛔ | ✅ |
 | 1 | [US-13 · ConfigMap con la plantilla HTML](#us-13) | 2 | | ✅ |
-| 1 | [US-14 · Deployment web con página personalizada](#us-14) | 5 | 🤝 | ⬜ |
+| 1 | [US-14 · Deployment web con página personalizada](#us-14) | 5 | 🤝 | ✅ |
 | 1 | [US-15 · Service ClusterIP e Ingress](#us-15) | 3 | ⚠️ | ⬜ |
 | 2 | [US-22 · Interfaz Multus en los Pods web](#us-22) | 3 | 🔀 | ⬜ |
 | 2 | [US-23 · Acceso a MariaDB desde los web y el admin](#us-23) | 3 | 🔀 | ⬜ |
@@ -66,7 +66,7 @@ En `web.tf`, crear `kubernetes_config_map_v1` con un `index.html` que tenga un m
 
 <a id="us-14"></a>
 ### 🖥️ US-14 · Deployment web con página personalizada · 5 pts · 🤝
-**Completed:** ⬜ · **Depende de:** [US-13](#us-13)
+**Completed:** ✅ · **Depende de:** [US-13](#us-13)
 
 `kubernetes_deployment_v1` con 3 réplicas de **`dgsgiros/nginx-ssh:latest`** (usuario `webuser`, GID 1000, con `sudo`). **Opción B (initContainer)**, según [D-003](../decisions.md):
 - `env POD_NAME` vía Downward API (`field_ref { field_path = "metadata.name" }`);

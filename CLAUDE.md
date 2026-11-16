@@ -80,6 +80,7 @@ Full requirements: PDF §2–§5. Stories: `historias/`.
 ## Environment
 
 The lab environment lives on temporary storage and is **rebuilt from scratch every working day**. Only this repo persists. So every step on the nodes or the LXC must be a script or Terraform in the repo, never a manual step, and the team should `git push` often.
+- Never create files (including a `CLAUDE.md`) in the scenario root `/mnt/tmp/k8s_lab-calico-v02/` or anywhere else outside this repo. They are lost at the next rebuild, and this file is the only CLAUDE.md the project needs.
 
 - Scenario root on the host: `/mnt/tmp/k8s_lab-calico-v02/`. The repo is cloned at `shared/terraform-k8s-trabajofinal/` under it (see `scripts/host-script.sh`). Edit files on the host.
 - `terraform` LXC VM (10.10.10.13) mounts `shared/` at `/shared`. **Run all `terraform` commands in `/shared/terraform-k8s-trabajofinal/terraform`** inside the VM (`ssh terraform`).

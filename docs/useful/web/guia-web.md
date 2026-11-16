@@ -192,7 +192,7 @@ resource "kubernetes_deployment_v1" "web" {
           port { container_port = 80 }
           volume_mount {
             name       = "html"
-            mount_path = "⟪PENDIENTE: raíz de nginx en la imagen⟫"
+            mount_path = "⟪PENDIENTE: raíz de nginx en la imagen, expected -> /usr/share/nginx/html⟫"
           }
         }
         volume {
