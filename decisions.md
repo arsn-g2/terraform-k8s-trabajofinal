@@ -54,7 +54,7 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 
 ### D-005 VLAN IPAM
 - **Date / author:** 2026-11-16 / Persona A
-- **Status:** Proposed.
+- **Status:** Acepted.
 - **Context:** the web servers are a Deployment of 3 replicas, so every Pod shares one template and one Multus annotation, and the replicas land on both workers. The P1.3 NAD uses `static` IPAM with the IP in each Pod's annotation, which a Deployment cannot do. `whereabouts` is not installed in the lab (checked 2026-11-13).
 - **Options considered:**
   - `static` (as in P1.3): tested; the Pods never start (`IPAM plugin returned missing IP config`).
@@ -89,3 +89,12 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 - **Decision:** we follow the 5 Nov version (`ARSN-trabajo-final-26-27.pdf`). The old one is in git history only.
 - **Why:** it is the latest, and it resolves the key-direction ambiguity we had flagged.
 - **Consequences:** D-004, US-03, US-16 and US-17 were updated. Note: the new §2.4 says "seguir las recomendaciones del paso 4", which refers to itself; we read it as step 5.
+
+### D-009 One shared VLAN: 1000, 10.1.2.0/24
+- **Date / author:** 2026-11-16 / Persona A, agreed by the team
+- **Status:** Accepted
+- **Context:** the PDF (§1 and §2) describes one VLAN shared by the web Pods, the admin Pod and the two LXC. The P1.3 template `k8s_lab-vms-vlan.xml`, which our `vnx/` files are based on, has two VLANs (1000 and 1001) joined by a `vlan-router`.
+- **Options considered:** keep the template's two VLANs and the router, with `bbdd` on 1000 and `logs` on 1001; or one VLAN for everything.
+- **Decision:** one VLAN, ID 1000, subnet `10.1.2.0/24`. Addressing plan: admin `10.1.2.5` (static), web Pods `10.1.2.10`–`10.1.2.50` (whereabouts, D-005), `bbdd` `10.1.2.100`, `logs` `10.1.2.101`.
+- **Why:** it is what the PDF describes. VLAN 1000 and `10.1.2.0/24` were tested with Calico in US-19 (`docs/investigacion-multus.md` §2–§3). One VLAN needs no router and fewer moving parts.
+- **Consequences:** `logs` moves to VLAN 1000 and the `vlan-router` is removed from the VNX files (US-12). `scripts/setup-vlan-workers.sh` creates only `e2.1000` (US-10). Terraform uses `vlan_id = 1000` and `vlan_subnet = "10.1.2.0/24"` (US-11).

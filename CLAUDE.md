@@ -61,7 +61,7 @@ Full requirements: PDF §2–§5. Stories: `historias/`.
   - Pods get an extra interface (`net1`) through a Multus `NetworkAttachmentDefinition`, created with `kubernetes_manifest` because the provider has no native resource for it. The plan is `macvlan` bridge on `e2.<vlan>`.
   - The workers need `e2.<vlan>` subinterfaces. The interface is **`e2`**, not `eth2`, and it is on the OVS net `VlanNet`.
   - The LXC `bbdd` (MariaDB) and `logs` (rsyslog on 514, D-006) live in a separate VNX XML based on `k8s_lab-vms-vlan.xml` from P1.3. It uses `exec` steps to install packages and `filetree` for configs and `authorized_keys`.
-  - The VLAN ID, subnet and IPAM are still open (US-03, US-19, D-005).
+  - VLAN 1000, subnet `10.1.2.0/24` (D-009). IPAM: `whereabouts` for the web Pods, installed on every start-up, and `static` for the admin (D-005).
 - **SSH (keys only, D-004)**: two pairs, generated each day by `ssh-keygen` into the git-ignored `keys/` and loaded with `file()` into three `kubernetes_secret_v1` (never `kubectl create secret`):
   - `ssh-admin-private`: the pair 1 private key, for the admin Pod;
   - `ssh-admin-authorized`: the pair 2 public key, for host → admin;
