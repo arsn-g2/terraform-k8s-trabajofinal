@@ -35,17 +35,17 @@ output "image_admin" {
 #   value = var.ingress_class
 # }
 #
-# output "vlan_master_if" {
-#   value = var.vlan_master_if
-# }
-#
-# output "vlan_id" {
-#   value = var.vlan_id
-# }
-#
-# output "vlan_subnet" {
-#   value = var.vlan_subnet
-# }
+output "vlan_master_if" {
+  value = var.vlan_master_if
+}
+
+output "vlan_id" {
+  value = var.vlan_id
+}
+
+output "vlan_subnet" {
+  value = var.vlan_subnet
+}
 
 # Web (US-13, US-14, US-15)
 
@@ -145,4 +145,26 @@ output "admin_service_type" {
 output "admin_service_node_port" {
   description = "Puerto para el SSH al admin: 10.10.10.11:<node_port>"
   value       = kubernetes_service_v1.adm_service.spec[0].port[0].node_port
+}
+
+# Multus (US-11): lo que necesitan B (US-22) y C (US-24) para la anotación de sus Pods
+
+output "nad_web_name" {
+  description = "NAD de los Pods web: k8s.v1.cni.cncf.io/networks = <este nombre>"
+  value       = kubernetes_manifest.nad_web.manifest.metadata.name
+}
+
+output "nad_admin_name" {
+  description = "NAD del Pod admin (IPAM static)"
+  value       = kubernetes_manifest.nad_admin.manifest.metadata.name
+}
+
+output "vlan_admin_ip_cidr" {
+  description = "IP del admin en la anotación: [{\"name\": \"<nad_admin_name>\", \"ips\": [\"<esta IP>\"]}]"
+  value       = local.vlan_admin_cidr
+}
+
+output "vlan_web_range" {
+  description = "Rango de IPs de los Pods web en la VLAN (whereabouts)"
+  value       = "${var.vlan_web_range_start}-${var.vlan_web_range_end}"
 }
