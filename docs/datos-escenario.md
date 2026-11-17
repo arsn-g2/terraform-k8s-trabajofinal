@@ -26,9 +26,10 @@ git clone https://github.com/arsn-g2/terraform-k8s-trabajofinal.git
 cd /mnt/tmp/k8s_lab-calico-v02/
 code .
 
-# claves SSH del día (US-16): antes de crear los LXC y de terraform apply, sin sudo
-chmod +x /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal/scripts/gen-keys.sh
-./mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal/scripts/gen-keys.sh
+# claves SSH del día (US-16): antes de crear los LXC y de terraform apply
+cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal
+chmod +x scripts/gen-keys.sh
+./scripts/gen-keys.sh
 
 # start the vlan and db, logs servers
 cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal/vnx

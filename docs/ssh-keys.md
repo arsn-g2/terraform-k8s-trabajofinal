@@ -161,20 +161,133 @@ En cada `<vm>` del XML:
 ```
 Si se regeneran las claves con todo ya desplegado: `terraform apply` actualiza los Secrets, pero **los Pods que usan `sub_path` no ven el cambio** hasta que se recrean (`kubectl rollout restart`), y los LXC hay que recrearlos (o re-ejecutar el `filetree`).
 
-## 7. Verificación (🧪 de US-16)
+## 7. Pruebas de validación (🧪 de US-16)
+
+Pruebas para confirmar que US-16 está desplegada y funciona. Cubren **solo** lo que entrega US-16: claves, filetree, Git y Secrets. El montaje en los Pods y las conexiones `ssh` reales se prueban en [US-17](../historias/persona-c.md#us-17), [US-18](../historias/persona-c.md#us-18) y [US-24](../historias/persona-c.md#us-24).
+
+Variables usadas en los comandos:
+```bash
+REPO=/mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal   # en el host
+NS=g2-workshop                                                       # var.namespace
+```
+
+| # | Prueba | Dónde | Resultado esperado |
+|---|---|---|---|
+| P1 | Claves generadas, con permisos correctos | host | 4 ficheros; `keys/` `700`, privadas `600` |
+| P2 | Cada privada corresponde a su pública | host | `diff` sin salida |
+| P3 | Los dos pares son distintos y de hoy | host | públicas diferentes; comentario con la fecha de hoy |
+| P4 | Pública del par 1 en el filetree | host | `filetree OK` |
+| P5 | Ninguna clave ni estado en Git | host | todo ignorado; `git ls-files` sin salida |
+| P6 | Terraform válido y los 3 Secrets en el estado | VM | `Success!`; 3 `kubernetes_secret_v1` |
+| P7 | Despliegue idempotente | VM | `No changes.` |
+| P8 | Los 3 Secrets existen en el clúster | host | 3 Secrets `Opaque`, `DATA` = 1 |
+| P9 | Contenido del Secret = fichero de `keys/` (sin doble base64) | host | 3 × `OK` |
+| P10 | Regenerar claves → Terraform actualiza los Secrets | host + VM | `3 to change` |
+| P11 | Sin claves, el plan falla | VM | `no file exists at …` |
+
+### P1 · Claves generadas (host)
 
 ```bash
-# Host
-./scripts/gen-keys.sh
-diff keys/par1_admin.pub vnx/filetree/ssh/authorized_keys && echo "filetree OK"
-git status                                   # ninguna clave aparece
-
-# VM terraform
-terraform fmt -recursive && terraform validate && terraform apply
-kubectl get secrets -n <ns>                  # los tres Secrets
-kubectl get secret ssh-web-authorized -n <ns> \
-  -o jsonpath='{.data.authorized_keys}' | base64 -d   # igual que keys/par1_admin.pub
+cd $REPO && ./scripts/gen-keys.sh
+ls -ld keys && ls -l keys
 ```
+Esperado: `drwx------` en `keys/`, `-rw-------` en `par1_admin` y `par2_host`, `-rw-r--r--` en los `.pub`. Las privadas tienen que ser `600` porque `ssh -i` se niega a usar una privada propia que otros puedan leer.
+
+### P2 · Privada y pública emparejadas (host)
+
+```bash
+for p in par1_admin par2_host; do
+  diff <(ssh-keygen -y -f keys/$p | cut -d' ' -f1,2) <(cut -d' ' -f1,2 keys/$p.pub) && echo "$p OK"
+done
+```
+`ssh-keygen -y` calcula la pública a partir de la privada. Solo se comparan tipo y clave (`cut -f1,2`), sin el comentario.
+
+### P3 · Pares distintos y del día (host)
+
+```bash
+cmp -s keys/par1_admin.pub keys/par2_host.pub && echo "❌ iguales" || echo "distintos OK"
+grep -H "$(date +%F)" keys/*.pub             # las dos con la fecha de hoy
+```
+Si el par 1 y el par 2 fueran la misma clave, se perdería la separación de §1.
+
+### P4 · Filetree para los LXC (host)
+
+```bash
+diff keys/par1_admin.pub vnx/filetree/ssh/authorized_keys && echo "filetree OK"
+```
+
+### P5 · Nada sensible en Git (host)
+
+```bash
+git check-ignore -v keys/par1_admin keys/par2_host vnx/filetree/ssh/authorized_keys terraform/terraform.tfstate
+git status --short                                         # no aparece keys/ ni filetree/ssh
+git ls-files | grep -E '^keys/|filetree/ssh|tfstate'       # sin salida
+```
+`check-ignore -v` dice qué línea de `.gitignore` ignora cada fichero. El `grep` comprueba que no haya nada de esto ya commiteado, porque `.gitignore` no afecta a los ficheros que ya están en el repo.
+
+### P6 · Terraform válido y estado (VM `terraform`)
+
+```bash
+cd /shared/terraform-k8s-trabajofinal/terraform
+terraform fmt -recursive -check && terraform validate
+terraform apply
+terraform state list | grep kubernetes_secret_v1
+```
+Esperado: `kubernetes_secret_v1.ssh_admin_private`, `.ssh_admin_authorized` y `.ssh_web_authorized`.
+
+### P7 · Idempotencia (VM `terraform`)
+
+```bash
+terraform plan        # justo después del apply
+```
+Esperado: `No changes.` Si propone cambios en los Secrets sin haber regenerado las claves, algo cambia entre ejecuciones, por ejemplo una ruta o un fichero distinto.
+
+### P8 · Secrets en el clúster (host)
+
+```bash
+kubectl get secrets -n $NS
+# si el kubectl del host falla por versión: ssh root@k8s-master kubectl get secrets -n g2-workshop
+```
+Esperado:
+```
+NAME                   TYPE     DATA   AGE
+ssh-admin-authorized   Opaque   1      …
+ssh-admin-private      Opaque   1      …
+ssh-web-authorized     Opaque   1      …
+```
+
+### P9 · Contenido correcto, sin doble base64 (host)
+
+```bash
+check() {  # <secret> <clave en data> <fichero en keys/>
+  kubectl get secret "$1" -n $NS -o jsonpath="{.data.$2}" | base64 -d | diff - "keys/$3" >/dev/null \
+    && echo "$1 OK" || echo "$1 ❌ distinto"
+}
+check ssh-admin-private    id_ed25519      par1_admin
+check ssh-admin-authorized authorized_keys par2_host.pub
+check ssh-web-authorized   authorized_keys par1_admin.pub
+```
+Un solo `base64 -d` tiene que devolver el fichero tal cual. Si sale texto base64 en vez de `ssh-ed25519 …` o `-----BEGIN OPENSSH PRIVATE KEY-----`, se usó `base64encode()` en `data` (ver §4).
+
+### P10 · Rotación diaria (host + VM)
+
+```bash
+./scripts/gen-keys.sh          # host: claves nuevas
+terraform plan                 # VM: los 3 Secrets "update in-place"
+terraform apply
+```
+Después, repetir P4 y P9 con las claves nuevas. Así se comprueba el flujo de cada día de §6.
+
+### P11 · Prueba negativa: sin claves (VM)
+
+```bash
+mv ../keys ../keys.bak
+terraform plan                 # debe fallar: Invalid value for "path" … no file exists at …
+mv ../keys.bak ../keys
+```
+Confirma que, si se olvida `gen-keys.sh`, Terraform falla al hacer el plan en vez de crear Secrets vacíos.
+
+> ⚠️ Para la memoria: `grep -c "BEGIN OPENSSH" terraform.tfstate` en la VM demuestra que la privada del par 1 está en claro en el estado (§4).
 
 ## 8. Problemas típicos
 
@@ -191,4 +304,3 @@ kubectl get secret ssh-web-authorized -n <ns> \
 ## 9. Pendiente
 
 - Usuario de destino en los LXC (`root` u otro): confirmar con A.
-- D-004 sigue en `Proposed`: pasarla a `Accepted` (con el tipo de clave ed25519) al terminar US-16.
