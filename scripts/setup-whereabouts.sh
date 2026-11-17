@@ -1,5 +1,5 @@
 #!/bin/bash
-# Instala el IPAM whereabouts en el clúster (US-11, D-005, D-011).
+# Instala el IPAM whereabouts en el clúster (US-11, D-005, D-010).
 # El escenario se crea de cero cada día: ejecutarlo en cada arranque, después de
 # ./bin/get-master-kubeconf y antes de `terraform apply`.
 # Uso: scripts/setup-whereabouts.sh [tag]      (por defecto, v0.9.4)

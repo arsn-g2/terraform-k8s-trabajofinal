@@ -1,0 +1,24 @@
+### Pod test-admin (static 10.1.2.5)
+NAME         READY   STATUS    RESTARTS   AGE   IP              NODE          NOMINATED NODE   READINESS GATES
+test-admin   1/1     Running   0          7s    172.16.194.70   k8s-worker1   <none>           <none>
+4: net1@if13: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue state UP qlen 1000
+    inet 10.1.2.5/24 brd 10.1.2.255 scope global net1
+       valid_lft forever preferred_lft forever
+### Ping test-admin -> 10.1.2.10 y -> bbdd
+PING 10.1.2.10 (10.1.2.10): 56 data bytes
+64 bytes from 10.1.2.10: seq=0 ttl=64 time=1.712 ms
+64 bytes from 10.1.2.10: seq=1 ttl=64 time=0.574 ms
+64 bytes from 10.1.2.10: seq=2 ttl=64 time=1.808 ms
+
+--- 10.1.2.10 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.574/1.364/1.808 ms
+PING 10.1.2.100 (10.1.2.100): 56 data bytes
+64 bytes from 10.1.2.100: seq=0 ttl=64 time=1.476 ms
+64 bytes from 10.1.2.100: seq=1 ttl=64 time=0.453 ms
+64 bytes from 10.1.2.100: seq=2 ttl=64 time=1.284 ms
+
+--- 10.1.2.100 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.453/1.071/1.476 ms
+(base) virginia.anton@l027:/mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal$ 

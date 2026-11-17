@@ -77,7 +77,7 @@ variable "vlan_master_if" {
 }
 
 variable "vlan_id" {
-  description = "VLAN ID de la red compartida con los LXC (D-010)"
+  description = "VLAN ID de la red compartida con los LXC (D-009)"
   type        = number
   default     = 1000
 
@@ -88,7 +88,7 @@ variable "vlan_id" {
 }
 
 variable "vlan_subnet" {
-  description = "Subred de la VLAN en notación CIDR, por ejemplo 10.1.2.0/24 (D-010)"
+  description = "Subred de la VLAN en notación CIDR, por ejemplo 10.1.2.0/24 (D-009)"
   type        = string
   default     = "10.1.2.0/24"
 
@@ -98,7 +98,7 @@ variable "vlan_subnet" {
   }
 }
 
-# Plan de direcciones de la VLAN (D-005, D-010)
+# Plan de direcciones de la VLAN (D-005, D-009)
 
 variable "vlan_web_range_start" {
   description = "Primera IP que whereabouts puede dar a los Pods web"

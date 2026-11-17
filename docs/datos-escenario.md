@@ -27,6 +27,7 @@ git clone https://github.com/arsn-g2/terraform-k8s-trabajofinal.git
 # VLAN 1000 (D-009): subinterfaz e2.1000 en los workers y LXC bbdd y logs (§9)
 cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal
 ./scripts/setup-vlan-workers.sh                    # crea e2.1000 en k8s-worker1 y k8s-worker2 (idempotente)
+./scripts/setup-whereabouts.sh                     # instala el IPAM whereabouts v0.9.4 (D-010, idempotente)
 cd vnx
 sudo vnx -f vnx-vm-bdd-logs.xml --create
 
@@ -90,13 +91,13 @@ El clúster arranca vacío: en `default` solo está el Service `kubernetes`.
 | CRD | `network-attachment-definitions.k8s.cni.cncf.io` (v1) existe, así que `kubernetes_manifest` puede crear NADs |
 | Config | `/etc/cni/net.d/00-multus.conf` delega en `10-calico.conflist` como red por defecto |
 | Plugins en `/opt/cni/bin` (workers) | `bridge`, `macvlan`, `ipvlan`, `vlan`, `host-device`, `host-local`, `static`, `dhcp`, `tuning`, `portmap`, `bandwidth`, `firewall`, `sbr`, `vrf`, `tap`, `dummy`, `ptp`, `passthru`, `loopback`, `calico`, `calico-ipam`, `flannel`, `multus-shim` |
-| `whereabouts` | **No instalado** (ver [D-005](../decisions.md)) |
+| `whereabouts` | v0.9.4. No viene con el escenario: lo instala `scripts/setup-whereabouts.sh` en cada arranque ([D-010](../decisions.md)). DaemonSet `whereabouts` e `IPPool` en `kube-system` |
 | Interfaz hacia `VlanNet` | **`e2`** en los dos workers (no `eth2`), en estado UP y sin IP. `VlanNet` es un switch Open vSwitch compartido con el escenario de los LXC |
-| Subinterfaces VLAN | Ninguna todavía. Hay que crear `e2.<vlan>` en cada arranque ([US-10](../historias/persona-a.md#us-10)) |
+| Subinterfaces VLAN | `e2.1000` en los dos workers. La crea `scripts/setup-vlan-workers.sh` en cada arranque ([US-10](../historias/persona-a.md#us-10)) |
 
 Cómo lo hicimos en la práctica 1.3 y plantillas para Terraform: [guía de Multus](useful/multus/guia-multus.md).
 
-VLAN ID y subred: **pendientes** ([US-03](../historias/persona-c.md#us-03)). Como referencia, `k8s_lab-vms-vlan.xml` (práctica 1.3) usa los tags 1000 y 1001 con `10.1.2.0/24` y `10.1.3.0/24`.
+VLAN ID y subred: **1000** y `10.1.2.0/24` ([D-009](../decisions.md)). Terraform crea dos NAD en `multus.tf` ([US-11](../historias/persona-a.md#us-11)): `vlan1000-web` (whereabouts, `10.1.2.10`–`10.1.2.50`) y `vlan1000-admin` (static; el Pod pide `10.1.2.5/24` en su anotación).
 
 ---
 
@@ -268,8 +269,8 @@ Calico aplica las políticas en la **veth del lado del host de cada Pod** (`cali
 - La IP de esa interfaz la da el IPAM del NAD:
   - `static`: una IP fija por Pod. Sencillo para el único Pod admin, incómodo para 3 réplicas de un mismo Deployment.
   - `host-local`: un rango, pero **asignado por separado en cada worker**, así que S1 en worker1 y S2 en worker2 pueden recibir la misma IP. Es el problema de [D-005](../decisions.md) / [US-19](../historias/persona-a.md#us-19).
-  - `whereabouts`: rango global del clúster sin duplicados, pero no está instalado (§4).
-  - Alternativa habitual con `host-local`: **un NAD por worker, con rangos que no se solapen**. Sigue siendo una decisión abierta de US-19.
+  - `whereabouts`: rango global del clúster sin duplicados. Se instala en cada arranque (§4).
+  - Decisión ([D-005](../decisions.md)): `whereabouts` para los web y `static` para el admin. Las NAD son `vlan1000-web` y `vlan1000-admin` (US-11).
 - Los LXC `bbdd` y `logs` tienen IPs estáticas en el XML de VNX (§9), en la misma subred y fuera del rango de los Pods.
 
 ### 10.5 Comandos para verlo en el clúster

@@ -1,0 +1,581 @@
+Warning: Permanently added 'terraform' (ED25519) to the list of known hosts.
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # kubernetes_manifest.nad_admin will be created
+  + resource "kubernetes_manifest" "nad_admin" {
+      + manifest = {
+          + apiVersion = "k8s.cni.cncf.io/v1"
+          + kind       = "NetworkAttachmentDefinition"
+          + metadata   = {
+              + name      = "vlan1000-admin"
+              + namespace = "g2-workshop"
+            }
+          + spec       = {
+              + config = jsonencode(
+                    {
+                      + capabilities = {
+                          + ips = true
+                        }
+                      + cniVersion   = "0.3.1"
+                      + ipam         = {
+                          + type = "static"
+                        }
+                      + master       = "e2.1000"
+                      + mode         = "bridge"
+                      + type         = "macvlan"
+                    }
+                )
+            }
+        }
+      + object   = {
+          + apiVersion = "k8s.cni.cncf.io/v1"
+          + kind       = "NetworkAttachmentDefinition"
+          + metadata   = {
+              + annotations                = (known after apply)
+              + creationTimestamp          = (known after apply)
+              + deletionGracePeriodSeconds = (known after apply)
+              + deletionTimestamp          = (known after apply)
+              + finalizers                 = (known after apply)
+              + generateName               = (known after apply)
+              + generation                 = (known after apply)
+              + labels                     = (known after apply)
+              + managedFields              = (known after apply)
+              + name                       = "vlan1000-admin"
+              + namespace                  = "g2-workshop"
+              + ownerReferences            = (known after apply)
+              + resourceVersion            = (known after apply)
+              + selfLink                   = (known after apply)
+              + uid                        = (known after apply)
+            }
+          + spec       = {
+              + config = jsonencode(
+                    {
+                      + capabilities = {
+                          + ips = true
+                        }
+                      + cniVersion   = "0.3.1"
+                      + ipam         = {
+                          + type = "static"
+                        }
+                      + master       = "e2.1000"
+                      + mode         = "bridge"
+                      + type         = "macvlan"
+                    }
+                )
+            }
+        }
+    }
+
+  # kubernetes_manifest.nad_web will be created
+  + resource "kubernetes_manifest" "nad_web" {
+      + manifest = {
+          + apiVersion = "k8s.cni.cncf.io/v1"
+          + kind       = "NetworkAttachmentDefinition"
+          + metadata   = {
+              + name      = "vlan1000-web"
+              + namespace = "g2-workshop"
+            }
+          + spec       = {
+              + config = jsonencode(
+                    {
+                      + cniVersion = "0.3.1"
+                      + ipam       = {
+                          + range       = "10.1.2.0/24"
+                          + range_end   = "10.1.2.50"
+                          + range_start = "10.1.2.10"
+                          + type        = "whereabouts"
+                        }
+                      + master     = "e2.1000"
+                      + mode       = "bridge"
+                      + type       = "macvlan"
+                    }
+                )
+            }
+        }
+      + object   = {
+          + apiVersion = "k8s.cni.cncf.io/v1"
+          + kind       = "NetworkAttachmentDefinition"
+          + metadata   = {
+              + annotations                = (known after apply)
+              + creationTimestamp          = (known after apply)
+              + deletionGracePeriodSeconds = (known after apply)
+              + deletionTimestamp          = (known after apply)
+              + finalizers                 = (known after apply)
+              + generateName               = (known after apply)
+              + generation                 = (known after apply)
+              + labels                     = (known after apply)
+              + managedFields              = (known after apply)
+              + name                       = "vlan1000-web"
+              + namespace                  = "g2-workshop"
+              + ownerReferences            = (known after apply)
+              + resourceVersion            = (known after apply)
+              + selfLink                   = (known after apply)
+              + uid                        = (known after apply)
+            }
+          + spec       = {
+              + config = jsonencode(
+                    {
+                      + cniVersion = "0.3.1"
+                      + ipam       = {
+                          + range       = "10.1.2.0/24"
+                          + range_end   = "10.1.2.50"
+                          + range_start = "10.1.2.10"
+                          + type        = "whereabouts"
+                        }
+                      + master     = "e2.1000"
+                      + mode       = "bridge"
+                      + type       = "macvlan"
+                    }
+                )
+            }
+        }
+    }
+
+  # kubernetes_namespace_v1.namespace will be created
+  + resource "kubernetes_namespace_v1" "namespace" {
+      + id                               = (known after apply)
+      + wait_for_default_service_account = false
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+    }
+
+Plan: 3 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + nad_admin_name = "vlan1000-admin"
+  + nad_web_name   = "vlan1000-web"
+  + namespace      = "g2-workshop"
+
+Warning: Resource targeting is in effect
+
+You are creating a plan with the -target option, which means that the result
+of this plan may not represent all of the changes requested by the current
+configuration.
+
+The -target option is not for routine use, and is provided only for
+exceptional situations such as recovering from errors or mistakes, or when
+Terraform specifically suggests to use it as part of an error message.
+
+─────────────────────────────────────────────────────────────────────────────
+
+Note: You didn't use the -out option to save this plan, so Terraform can't
+guarantee to take exactly these actions if you run "terraform apply" now.
+Warning: Permanently added 'terraform' (ED25519) to the list of known hosts.
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # kubernetes_manifest.nad_admin will be created
+  + resource "kubernetes_manifest" "nad_admin" {
+      + manifest = {
+          + apiVersion = "k8s.cni.cncf.io/v1"
+          + kind       = "NetworkAttachmentDefinition"
+          + metadata   = {
+              + name      = "vlan1000-admin"
+              + namespace = "g2-workshop"
+            }
+          + spec       = {
+              + config = jsonencode(
+                    {
+                      + capabilities = {
+                          + ips = true
+                        }
+                      + cniVersion   = "0.3.1"
+                      + ipam         = {
+                          + type = "static"
+                        }
+                      + master       = "e2.1000"
+                      + mode         = "bridge"
+                      + type         = "macvlan"
+                    }
+                )
+            }
+        }
+      + object   = {
+          + apiVersion = "k8s.cni.cncf.io/v1"
+          + kind       = "NetworkAttachmentDefinition"
+          + metadata   = {
+              + annotations                = (known after apply)
+              + creationTimestamp          = (known after apply)
+              + deletionGracePeriodSeconds = (known after apply)
+              + deletionTimestamp          = (known after apply)
+              + finalizers                 = (known after apply)
+              + generateName               = (known after apply)
+              + generation                 = (known after apply)
+              + labels                     = (known after apply)
+              + managedFields              = (known after apply)
+              + name                       = "vlan1000-admin"
+              + namespace                  = "g2-workshop"
+              + ownerReferences            = (known after apply)
+              + resourceVersion            = (known after apply)
+              + selfLink                   = (known after apply)
+              + uid                        = (known after apply)
+            }
+          + spec       = {
+              + config = jsonencode(
+                    {
+                      + capabilities = {
+                          + ips = true
+                        }
+                      + cniVersion   = "0.3.1"
+                      + ipam         = {
+                          + type = "static"
+                        }
+                      + master       = "e2.1000"
+                      + mode         = "bridge"
+                      + type         = "macvlan"
+                    }
+                )
+            }
+        }
+    }
+
+  # kubernetes_manifest.nad_web will be created
+  + resource "kubernetes_manifest" "nad_web" {
+      + manifest = {
+          + apiVersion = "k8s.cni.cncf.io/v1"
+          + kind       = "NetworkAttachmentDefinition"
+          + metadata   = {
+              + name      = "vlan1000-web"
+              + namespace = "g2-workshop"
+            }
+          + spec       = {
+              + config = jsonencode(
+                    {
+                      + cniVersion = "0.3.1"
+                      + ipam       = {
+                          + range       = "10.1.2.0/24"
+                          + range_end   = "10.1.2.50"
+                          + range_start = "10.1.2.10"
+                          + type        = "whereabouts"
+                        }
+                      + master     = "e2.1000"
+                      + mode       = "bridge"
+                      + type       = "macvlan"
+                    }
+                )
+            }
+        }
+      + object   = {
+          + apiVersion = "k8s.cni.cncf.io/v1"
+          + kind       = "NetworkAttachmentDefinition"
+          + metadata   = {
+              + annotations                = (known after apply)
+              + creationTimestamp          = (known after apply)
+              + deletionGracePeriodSeconds = (known after apply)
+              + deletionTimestamp          = (known after apply)
+              + finalizers                 = (known after apply)
+              + generateName               = (known after apply)
+              + generation                 = (known after apply)
+              + labels                     = (known after apply)
+              + managedFields              = (known after apply)
+              + name                       = "vlan1000-web"
+              + namespace                  = "g2-workshop"
+              + ownerReferences            = (known after apply)
+              + resourceVersion            = (known after apply)
+              + selfLink                   = (known after apply)
+              + uid                        = (known after apply)
+            }
+          + spec       = {
+              + config = jsonencode(
+                    {
+                      + cniVersion = "0.3.1"
+                      + ipam       = {
+                          + range       = "10.1.2.0/24"
+                          + range_end   = "10.1.2.50"
+                          + range_start = "10.1.2.10"
+                          + type        = "whereabouts"
+                        }
+                      + master     = "e2.1000"
+                      + mode       = "bridge"
+                      + type       = "macvlan"
+                    }
+                )
+            }
+        }
+    }
+
+  # kubernetes_namespace_v1.namespace will be created
+  + resource "kubernetes_namespace_v1" "namespace" {
+      + id                               = (known after apply)
+      + wait_for_default_service_account = false
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+    }
+
+Plan: 3 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + nad_admin_name = "vlan1000-admin"
+  + nad_web_name   = "vlan1000-web"
+  + namespace      = "g2-workshop"
+kubernetes_namespace_v1.namespace: Creating...
+kubernetes_namespace_v1.namespace: Creation complete after 0s [id=g2-workshop]
+kubernetes_manifest.nad_admin: Creating...
+kubernetes_manifest.nad_web: Creating...
+kubernetes_manifest.nad_admin: Creation complete after 0s
+kubernetes_manifest.nad_web: Creation complete after 0s
+
+Warning: Resource targeting is in effect
+
+You are creating a plan with the -target option, which means that the result
+of this plan may not represent all of the changes requested by the current
+configuration.
+
+The -target option is not for routine use, and is provided only for
+exceptional situations such as recovering from errors or mistakes, or when
+Terraform specifically suggests to use it as part of an error message.
+
+Warning: Applied changes may be incomplete
+
+The plan was created with the -target option in effect, so some changes
+requested in the configuration may have been ignored and the output values
+may not be fully updated. Run the following command to verify that no other
+changes are pending:
+    terraform plan
+
+Note that the -target option is not suitable for routine use, and is provided
+only for exceptional situations such as recovering from errors or mistakes,
+or when Terraform specifically suggests to use it as part of an error
+message.
+
+Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+nad_admin_name = "vlan1000-admin"
+nad_web_name = "vlan1000-web"
+namespace = "g2-workshop"
+Warning: Permanently added 'terraform' (ED25519) to the list of known hosts.
+nad_admin_name = "vlan1000-admin"
+nad_web_name = "vlan1000-web"
+namespace = "g2-workshop"
+Warning: Permanently added 'terraform' (ED25519) to the list of known hosts.
+"10.1.2.5/24"
+Warning: Permanently added 'terraform' (ED25519) to the list of known hosts.
+data.kubernetes_resource.metallb_pool: Reading...
+data.kubernetes_service_v1.ingress_controller: Reading...
+kubernetes_namespace_v1.namespace: Refreshing state... [id=g2-workshop]
+data.kubernetes_service_v1.ingress_controller: Read complete after 1s [id=ingress-nginx/ingress-nginx-controller]
+data.kubernetes_resource.metallb_pool: Read complete after 1s
+kubernetes_manifest.nad_admin: Refreshing state...
+kubernetes_manifest.nad_web: Refreshing state...
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  - destroy
+
+Terraform will perform the following actions:
+
+  # kubernetes_manifest.nad_admin will be destroyed
+  - resource "kubernetes_manifest" "nad_admin" {
+      - manifest = {
+          - apiVersion = "k8s.cni.cncf.io/v1"
+          - kind       = "NetworkAttachmentDefinition"
+          - metadata   = {
+              - name      = "vlan1000-admin"
+              - namespace = "g2-workshop"
+            }
+          - spec       = {
+              - config = jsonencode(
+                    {
+                      - capabilities = {
+                          - ips = true
+                        }
+                      - cniVersion   = "0.3.1"
+                      - ipam         = {
+                          - type = "static"
+                        }
+                      - master       = "e2.1000"
+                      - mode         = "bridge"
+                      - type         = "macvlan"
+                    }
+                )
+            }
+        } -> null
+      - object   = {
+          - apiVersion = "k8s.cni.cncf.io/v1"
+          - kind       = "NetworkAttachmentDefinition"
+          - metadata   = {
+              - annotations                = null
+              - creationTimestamp          = null
+              - deletionGracePeriodSeconds = null
+              - deletionTimestamp          = null
+              - finalizers                 = null
+              - generateName               = null
+              - generation                 = null
+              - labels                     = null
+              - managedFields              = null
+              - name                       = "vlan1000-admin"
+              - namespace                  = "g2-workshop"
+              - ownerReferences            = null
+              - resourceVersion            = null
+              - selfLink                   = null
+              - uid                        = null
+            }
+          - spec       = {
+              - config = jsonencode(
+                    {
+                      - capabilities = {
+                          - ips = true
+                        }
+                      - cniVersion   = "0.3.1"
+                      - ipam         = {
+                          - type = "static"
+                        }
+                      - master       = "e2.1000"
+                      - mode         = "bridge"
+                      - type         = "macvlan"
+                    }
+                )
+            }
+        } -> null
+    }
+
+  # kubernetes_manifest.nad_web will be destroyed
+  - resource "kubernetes_manifest" "nad_web" {
+      - manifest = {
+          - apiVersion = "k8s.cni.cncf.io/v1"
+          - kind       = "NetworkAttachmentDefinition"
+          - metadata   = {
+              - name      = "vlan1000-web"
+              - namespace = "g2-workshop"
+            }
+          - spec       = {
+              - config = jsonencode(
+                    {
+                      - cniVersion = "0.3.1"
+                      - ipam       = {
+                          - range       = "10.1.2.0/24"
+                          - range_end   = "10.1.2.50"
+                          - range_start = "10.1.2.10"
+                          - type        = "whereabouts"
+                        }
+                      - master     = "e2.1000"
+                      - mode       = "bridge"
+                      - type       = "macvlan"
+                    }
+                )
+            }
+        } -> null
+      - object   = {
+          - apiVersion = "k8s.cni.cncf.io/v1"
+          - kind       = "NetworkAttachmentDefinition"
+          - metadata   = {
+              - annotations                = null
+              - creationTimestamp          = null
+              - deletionGracePeriodSeconds = null
+              - deletionTimestamp          = null
+              - finalizers                 = null
+              - generateName               = null
+              - generation                 = null
+              - labels                     = null
+              - managedFields              = null
+              - name                       = "vlan1000-web"
+              - namespace                  = "g2-workshop"
+              - ownerReferences            = null
+              - resourceVersion            = null
+              - selfLink                   = null
+              - uid                        = null
+            }
+          - spec       = {
+              - config = jsonencode(
+                    {
+                      - cniVersion = "0.3.1"
+                      - ipam       = {
+                          - range       = "10.1.2.0/24"
+                          - range_end   = "10.1.2.50"
+                          - range_start = "10.1.2.10"
+                          - type        = "whereabouts"
+                        }
+                      - master     = "e2.1000"
+                      - mode       = "bridge"
+                      - type       = "macvlan"
+                    }
+                )
+            }
+        } -> null
+    }
+
+  # kubernetes_namespace_v1.namespace will be destroyed
+  - resource "kubernetes_namespace_v1" "namespace" {
+      - id                               = "g2-workshop" -> null
+      - wait_for_default_service_account = false -> null
+
+      - metadata {
+          - annotations      = {} -> null
+          - generation       = 0 -> null
+          - labels           = {} -> null
+          - name             = "g2-workshop" -> null
+          - resource_version = "4416" -> null
+          - uid              = "a5bac6d0-4983-4e15-8ff5-24f4fbbecaac" -> null
+            # (1 unchanged attribute hidden)
+        }
+    }
+
+Plan: 0 to add, 0 to change, 3 to destroy.
+
+Changes to Outputs:
+  - admin_deployment_name     = "admin-deployment" -> null
+  - admin_deployment_replicas = "1" -> null
+  - admin_labels              = {
+      - app = "admin"
+    } -> null
+  - admin_service_name        = "admin-service" -> null
+  - admin_service_node_port   = 30002 -> null
+  - admin_service_type        = "NodePort" -> null
+  - group_number              = 2 -> null
+  - image_admin               = "dgsgiros/admin-ssh:latest" -> null
+  - image_web                 = "dgsgiros/nginx-ssh:latest" -> null
+  - ingress_class             = "nginx" -> null
+  - ingress_http_node_port    = 30097 -> null
+  - ingress_lb_ip             = "10.10.10.20" -> null
+  - ingress_name              = "g2-ingress" -> null
+  - ingress_path              = "/servers-G2" -> null
+  - metallb_pool_addresses    = [
+      - "10.10.10.20-10.10.10.30",
+    ] -> null
+  - nad_admin_name            = "vlan1000-admin" -> null
+  - nad_web_name              = "vlan1000-web" -> null
+  - namespace                 = "g2-workshop" -> null
+  - vlan_admin_ip_cidr        = "10.1.2.5/24" -> null
+  - vlan_id                   = 1000 -> null
+  - vlan_master_if            = "e2" -> null
+  - vlan_subnet               = "10.1.2.0/24" -> null
+  - vlan_web_range            = "10.1.2.10-10.1.2.50" -> null
+  - web_config_map_name       = "nginx-web-config" -> null
+  - web_deployment_name       = "nginx-deployment" -> null
+  - web_deployment_replicas   = "3" -> null
+  - web_labels                = {
+      - app = "web"
+    } -> null
+  - web_num_replicas          = 3 -> null
+  - web_service_name          = "nginx-service" -> null
+  - web_service_type          = "ClusterIP" -> null
+  - web_url                   = "http://10.10.10.20/servers-G2" -> null
+kubernetes_manifest.nad_web: Destroying...
+kubernetes_manifest.nad_admin: Destroying...
+kubernetes_manifest.nad_web: Destruction complete after 0s
+kubernetes_manifest.nad_admin: Destruction complete after 0s
+kubernetes_namespace_v1.namespace: Destroying... [id=g2-workshop]
+kubernetes_namespace_v1.namespace: Destruction complete after 6s
+
+Destroy complete! Resources: 3 destroyed.

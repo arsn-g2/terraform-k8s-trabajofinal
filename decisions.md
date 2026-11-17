@@ -107,3 +107,13 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 - **Decision:** one VLAN, ID 1000, subnet `10.1.2.0/24`. Addressing plan: admin `10.1.2.5` (static), web Pods `10.1.2.10`–`10.1.2.50` (whereabouts, D-005), `bbdd` `10.1.2.100`, `logs` `10.1.2.101`.
 - **Why:** it is what the PDF describes. VLAN 1000 and `10.1.2.0/24` were tested with Calico in US-19 (`docs/investigacion-multus.md` §2–§3). One VLAN needs no router and fewer moving parts.
 - **Consequences:** `logs` moves to VLAN 1000 and the `vlan-router` is removed from the VNX files (US-12). `scripts/setup-vlan-workers.sh` creates only `e2.1000` (US-10). Terraform uses `vlan_id = 1000` and `vlan_subnet = "10.1.2.0/24"` (US-11).
+
+
+### D-010 whereabouts installed by a script on every start-up
+- **Date / author:** 2026-11-17 / Persona A
+- **Status:** Proposed
+- **Context:** D-005 picks `whereabouts` for the web Pods. The scenario does not include it and is rebuilt from scratch every day, so it has to be installed every time (US-11).
+- **Options considered:** install it from Terraform (one `kubernetes_manifest` per object of the upstream YAML); or a script run at start-up, like `setup-vlan-workers.sh`.
+- **Decision:** `scripts/setup-whereabouts.sh`, run on every start-up after `./bin/get-master-kubeconf` and before `terraform apply`. It installs a fixed release, `v0.9.4`, and pins the image to the same tag instead of `:latest`.
+- **Why:** whereabouts belongs to the cluster, like Multus: a DaemonSet in `kube-system` that copies the IPAM plugin to every node, plus two CRDs. It is not part of our application, and `terraform destroy` should not remove it. A fixed tag makes every start-up install the same version.
+- **Consequences:** start-up order: `setup-vlan-workers.sh` → `setup-whereabouts.sh` → VNX → `terraform apply`. If the script has not run, the web Pods stay in `ContainerCreating` because the node has no `whereabouts` plugin. `docs/datos-escenario.md` §1 and §4 describe it.

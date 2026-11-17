@@ -1,0 +1,13 @@
+### Deployment test-web (whereabouts)
+NAME                        READY   STATUS    RESTARTS   AGE   IP              NODE          NOMINATED NODE   READINESS GATES
+test-web-65966885bf-l2gxs   1/1     Running   0          26s   172.16.194.69   k8s-worker1   <none>           <none>
+test-web-65966885bf-vgm7s   1/1     Running   0          27s   172.16.126.1    k8s-worker2   <none>           <none>
+--- pod/test-web-65966885bf-l2gxs
+4: net1@if13: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue state UP qlen 1000
+    inet 10.1.2.11/24 brd 10.1.2.255 scope global net1
+       valid_lft forever preferred_lft forever
+--- pod/test-web-65966885bf-vgm7s
+4: net1@if9: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue state UP qlen 1000
+    inet 10.1.2.10/24 brd 10.1.2.255 scope global net1
+       valid_lft forever preferred_lft forever
+(base) virginia.anton@l027:/mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofi

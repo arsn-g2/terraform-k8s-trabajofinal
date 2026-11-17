@@ -1,0 +1,7 @@
+### NADs
+NAME             AGE
+vlan1000-admin   5m12s
+vlan1000-web     5m12s
+{"cniVersion":"0.3.1","ipam":{"range":"10.1.2.0/24","range_end":"10.1.2.50","range_start":"10.1.2.10","type":"whereabouts"},"master":"e2.1000","mode":"bridge","type":"macvlan"}
+{"capabilities":{"ips":true},"cniVersion":"0.3.1","ipam":{"type":"static"},"master":"e2.1000","mode":"bridge","type":"macvlan"}
+(base) virginia.anton@l027:/mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal$ 

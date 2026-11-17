@@ -1,0 +1,27 @@
+### Ping pod/test-web-65966885bf-l2gxs (worker1) -> 10.1.2.10 (pod/test-web-65966885bf-vgm7s, worker2)
+PING 10.1.2.10 (10.1.2.10): 56 data bytes
+64 bytes from 10.1.2.10: seq=0 ttl=64 time=1.581 ms
+64 bytes from 10.1.2.10: seq=1 ttl=64 time=1.384 ms
+64 bytes from 10.1.2.10: seq=2 ttl=64 time=0.518 ms
+
+--- 10.1.2.10 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.518/1.161/1.581 ms
+### Ping pod/test-web-65966885bf-l2gxs -> bbdd y logs
+PING 10.1.2.100 (10.1.2.100): 56 data bytes
+64 bytes from 10.1.2.100: seq=0 ttl=64 time=1.992 ms
+64 bytes from 10.1.2.100: seq=1 ttl=64 time=3.082 ms
+64 bytes from 10.1.2.100: seq=2 ttl=64 time=0.620 ms
+
+--- 10.1.2.100 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.620/1.898/3.082 ms
+PING 10.1.2.101 (10.1.2.101): 56 data bytes
+64 bytes from 10.1.2.101: seq=0 ttl=64 time=1.621 ms
+64 bytes from 10.1.2.101: seq=1 ttl=64 time=0.304 ms
+64 bytes from 10.1.2.101: seq=2 ttl=64 time=0.587 ms
+
+--- 10.1.2.101 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.304/0.837/1.621 ms
+(base) virginia.anton@l027:/mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal$ 

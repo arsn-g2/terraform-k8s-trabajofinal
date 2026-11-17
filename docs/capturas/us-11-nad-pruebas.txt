@@ -1,0 +1,93 @@
+### NADs
+NAME             AGE
+vlan1000-admin   5m12s
+vlan1000-web     5m12s
+{"cniVersion":"0.3.1","ipam":{"range":"10.1.2.0/24","range_end":"10.1.2.50","range_start":"10.1.2.10","type":"whereabouts"},"master":"e2.1000","mode":"bridge","type":"macvlan"}
+{"capabilities":{"ips":true},"cniVersion":"0.3.1","ipam":{"type":"static"},"master":"e2.1000","mode":"bridge","type":"macvlan"}
+### Deployment test-web (whereabouts)
+NAME                        READY   STATUS    RESTARTS   AGE   IP              NODE          NOMINATED NODE   READINESS GATES
+test-web-65966885bf-l2gxs   1/1     Running   0          26s   172.16.194.69   k8s-worker1   <none>           <none>
+test-web-65966885bf-vgm7s   1/1     Running   0          27s   172.16.126.1    k8s-worker2   <none>           <none>
+--- pod/test-web-65966885bf-l2gxs
+4: net1@if13: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue state UP qlen 1000
+    inet 10.1.2.11/24 brd 10.1.2.255 scope global net1
+       valid_lft forever preferred_lft forever
+--- pod/test-web-65966885bf-vgm7s
+4: net1@if9: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue state UP qlen 1000
+    inet 10.1.2.10/24 brd 10.1.2.255 scope global net1
+       valid_lft forever preferred_lft forever
+### Ping pod/test-web-65966885bf-l2gxs (worker1) -> 10.1.2.10 (pod/test-web-65966885bf-vgm7s, worker2)
+PING 10.1.2.10 (10.1.2.10): 56 data bytes
+64 bytes from 10.1.2.10: seq=0 ttl=64 time=1.581 ms
+64 bytes from 10.1.2.10: seq=1 ttl=64 time=1.384 ms
+64 bytes from 10.1.2.10: seq=2 ttl=64 time=0.518 ms
+
+--- 10.1.2.10 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.518/1.161/1.581 ms
+### Ping pod/test-web-65966885bf-l2gxs -> bbdd y logs
+PING 10.1.2.100 (10.1.2.100): 56 data bytes
+64 bytes from 10.1.2.100: seq=0 ttl=64 time=1.992 ms
+64 bytes from 10.1.2.100: seq=1 ttl=64 time=3.082 ms
+64 bytes from 10.1.2.100: seq=2 ttl=64 time=0.620 ms
+
+--- 10.1.2.100 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.620/1.898/3.082 ms
+PING 10.1.2.101 (10.1.2.101): 56 data bytes
+64 bytes from 10.1.2.101: seq=0 ttl=64 time=1.621 ms
+64 bytes from 10.1.2.101: seq=1 ttl=64 time=0.304 ms
+64 bytes from 10.1.2.101: seq=2 ttl=64 time=0.587 ms
+
+--- 10.1.2.101 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.304/0.837/1.621 ms
+### IPPool
+apiVersion: v1
+items:
+- apiVersion: whereabouts.cni.cncf.io/v1alpha1
+  kind: IPPool
+  metadata:
+    creationTimestamp: "2026-11-17T20:13:28Z"
+    generation: 3
+    name: 10.1.2.0-24
+    namespace: kube-system
+    resourceVersion: "5124"
+    uid: 04633f93-3869-4d4a-9afc-3c93676941ed
+  spec:
+    allocations:
+      "10":
+        id: 728989b1ebdae557ba4a832f80141d4f298d8c68974f2b034809793aaec84e9d
+        ifname: net1
+        podref: g2-workshop/test-web-65966885bf-vgm7s
+      "11":
+        id: fdd7dc60881874caddb564ee504f0b1501a0d54f28f8052ca55af6c414bf5642
+        ifname: net1
+        podref: g2-workshop/test-web-65966885bf-l2gxs
+    range: 10.1.2.0/24
+kind: List
+metadata:
+  resourceVersion: ""
+### Pod test-admin (static 10.1.2.5)
+NAME         READY   STATUS    RESTARTS   AGE   IP              NODE          NOMINATED NODE   READINESS GATES
+test-admin   1/1     Running   0          7s    172.16.194.70   k8s-worker1   <none>           <none>
+4: net1@if13: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue state UP qlen 1000
+    inet 10.1.2.5/24 brd 10.1.2.255 scope global net1
+       valid_lft forever preferred_lft forever
+### Ping test-admin -> 10.1.2.10 y -> bbdd
+PING 10.1.2.10 (10.1.2.10): 56 data bytes
+64 bytes from 10.1.2.10: seq=0 ttl=64 time=1.712 ms
+64 bytes from 10.1.2.10: seq=1 ttl=64 time=0.574 ms
+64 bytes from 10.1.2.10: seq=2 ttl=64 time=1.808 ms
+
+--- 10.1.2.10 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.574/1.364/1.808 ms
+PING 10.1.2.100 (10.1.2.100): 56 data bytes
+64 bytes from 10.1.2.100: seq=0 ttl=64 time=1.476 ms
+64 bytes from 10.1.2.100: seq=1 ttl=64 time=0.453 ms
+64 bytes from 10.1.2.100: seq=2 ttl=64 time=1.284 ms
+
+--- 10.1.2.100 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.453/1.071/1.476 ms

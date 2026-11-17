@@ -1,0 +1,6 @@
+Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
+Warning: Permanently added 'terraform' (ED25519) to the list of known hosts.
+nad_admin_name = "vlan1000-admin"
+nad_web_name = "vlan1000-web"
+namespace = "g2-workshop"
+(base) virginia.anton@l027:/mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal$ 

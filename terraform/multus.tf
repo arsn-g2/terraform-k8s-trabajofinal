@@ -1,9 +1,9 @@
-# Redes extra de Multus en la VLAN compartida con los LXC (US-11, D-005, D-010)
+# Redes extra de Multus en la VLAN compartida con los LXC (US-11, D-005, D-009)
 #
 # Las dos NAD son macvlan en modo bridge sobre la subinterfaz e2.1000, que crea
 # scripts/setup-vlan-workers.sh en cada arranque. Plan de direcciones de la VLAN:
 #   admin      10.1.2.5          IPAM static (la IP la pide el Pod en su anotación)
-#   web        10.1.2.10-50      IPAM whereabouts (scripts/setup-whereabouts.sh, D-011)
+#   web        10.1.2.10-50      IPAM whereabouts (scripts/setup-whereabouts.sh, D-010)
 #   bbdd/logs  10.1.2.100/.101   fijas en vnx/vnx-vm-bdd-logs.xml
 
 locals {
