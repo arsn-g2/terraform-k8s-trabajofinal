@@ -183,3 +183,100 @@ sudo vnx -f vnx/vnx-vm-bdd-logs.xml --create
 sudo ovs-vsctl show                          # puertos de VlanNet y su tag (bbdd-e1 y logs-e1 con tag 1000)
 sudo vnx -f vnx/vnx-vm-bdd-logs.xml --destroy   # parada
 ```
+
+---
+
+## 10. NetworkPolicies y direccionamiento de los Pods
+
+Explicación de cómo encajan las NetworkPolicies del enunciado (§5 del PDF) con el escenario. Las IPs de Pods del diagrama son ejemplos.
+
+### 10.1 ¿Cada Pod necesita una IP distinta? ¿Hay que configurarla?
+
+- **No hay que configurar nada para `eth0`.** El IPAM de Calico asigna a cada Pod una IP única de la red de Pods `172.16.0.0/16` (§3). Calico reparte bloques `/26` por nodo, así que no hay colisiones.
+- **Las NetworkPolicies no usan IPs de Pods.** Seleccionan Pods por **labels** (`podSelector`), y Calico traduce esos labels a las IPs actuales. La única IP literal en una policy es el `ipBlock` del host, porque el host no es un Pod y no tiene labels.
+- **Donde sí importa la IP es en la segunda interfaz (`net1`, la VLAN).** Esa IP la da el IPAM del NAD de Multus, no Calico, y las NetworkPolicies no le aplican (ver §10.4).
+
+### 10.2 Dónde se aplican las políticas
+
+Calico aplica las políticas en la **veth del lado del host de cada Pod** (`caliXXXX` en el worker). Todo paquete que entra o sale por el `eth0` del Pod pasa por las reglas iptables que Calico genera a partir de las políticas que seleccionan ese Pod.
+
+```
+                         ┌──────────────────────── namespace ingress-nginx ───────────────┐
+ Clientes / host         │  Pod ingress-nginx-controller   (k8s-worker1)                  │
+ 10.10.20.2              │  labels: app.kubernetes.io/name=ingress-nginx                  │
+   │                     │  eth0 172.16.x.a  (IP de Calico)                               │
+   │ HTTP                └───────────────▲──────────────────────────┬─────────────────────┘
+   │ 10.10.10.11:30097 (NodePort)        │                          │ conexión NUEVA
+   │ o MetalLB 10.10.10.2x:80 ───────────┘                          │ src 172.16.x.a
+   │                                                                │ dst <IP Pod web>:80  (puerto del Pod, NO 8080)
+   │                                                                ▼
+   │      ┌────────────────────────── namespace var.namespace (G2) ──────────────────────────────┐
+   │      │                                                                                      │
+   │      │   ⓪ default-deny  podSelector {}  policyTypes [Ingress, Egress]  → aplica a TODOS ↓  │
+   │      │                                                                                      │
+   │      │   ① allow-web-from-ingress   (podSelector app=web)                                   │
+   │      │      ingress.from: { namespaceSelector name=ingress-nginx                            │
+   │      │                      AND podSelector app.kubernetes.io/name=ingress-nginx }          │
+   │      │      ports: TCP 80                                                                   │
+   │      │        ┌─────────┐  ┌─────────┐  ┌─────────┐                                        │
+   │      │        │ S1 web  │  │ S2 web  │  │ S3 web  │    eth0 172.16.<w1|w2>.y  :80          │
+   │      │        │ ◄─cali  │  │ ◄─cali  │  │ ◄─cali  │    ◄─cali = donde Calico aplica        │
+   │      │        └──┬──────┘  └──┬──────┘  └──┬──────┘                                        │
+   │      │           │ net1       │ net1       │ net1    (VLAN, macvlan sobre e2.<vlan>)       │
+   │      │           │            │            │         ✗ Calico NO ve este tráfico          │
+   │      │  Svc web ClusterIP 10.x.x.x:8080 → :80  (ingress-nginx no lo usa: va Pod→Pod)        │
+   │      │                                                                                      │
+   │ SSH  │   ② allow-admin-ssh-from-host  (podSelector app=admin)                               │
+   └──────┼──► ingress.from: { ipBlock 10.10.20.2/32 }   ports: TCP 22                           │
+   10.10.10.11:<nodePort>  (Svc admin NodePort 2222→22, externalTrafficPolicy: Local)            │
+   r1 enruta sin NAT  →  el origen sigue siendo 10.10.20.2                                       │
+          │        ┌──────────────┐                                                              │
+          │        │ Pod admin    │  nodeSelector k8s-worker1                                    │
+          │        │ ◄─cali :22   │  eth0 172.16.<w1>.z                                          │
+          │        └──────┬───────┘                                                              │
+          │               │ net1 ──────────────┐                                                 │
+          └───────────────┼────────────────────┼─────────────────────────────────────────────────┘
+                          ▼                    ▼
+              ═════════ VLAN <id> en VlanNet (e2.<vlan> en los workers) ═════════
+                     │                         │
+               LXC bbdd (MariaDB :3306)   LXC logs (rsyslog :514)
+               no son Pods: aquí no hay NetworkPolicy
+```
+
+### 10.3 Qué hace cada política y por qué
+
+**⓪ Denegación por defecto** (`podSelector: {}`, Ingress + Egress)
+- Selecciona todos los Pods del namespace. En cuanto un Pod está seleccionado por alguna política en una dirección, solo pasa lo que esté permitido explícitamente en esa dirección.
+- También bloquea la salida, DNS incluido. Las respuestas a conexiones entrantes permitidas sí salen, porque Calico sigue el estado de las conexiones (conntrack): una respuesta no necesita regla de egress.
+
+**① Web ← solo ingress-nginx, TCP 80**
+- El controller de ingress-nginx no pasa por el Service ClusterIP. Lee los endpoints del Service y abre una conexión **nueva** directamente a `<IP Pod web>:80`. Por eso:
+  - el origen es la **IP de Calico del Pod del controller**, no la del cliente;
+  - el puerto es el **puerto del Pod, 80**, no el 8080.
+- `namespaceSelector` y `podSelector` van en la **misma** entrada de `from`, lo que significa AND. En dos entradas separadas significaría OR: entraría cualquier Pod de `ingress-nginx` y cualquier Pod con el label `ingress-nginx` de cualquier namespace.
+
+**② Admin ← solo el host 10.10.20.2, TCP 22**
+- Usa `ipBlock` porque el host no es un Pod y no hay label que seleccionar.
+- Solo funciona si la IP de origen **sigue siendo 10.10.20.2** al llegar al Pod:
+  - `r1` enruta entre `user_LAN` y la red del clúster sin NAT (§2).
+  - Con `externalTrafficPolicy: Cluster` (el valor por defecto), kube-proxy en el worker haría SNAT a la IP del nodo para poder reenviar a cualquier nodo, y el `ipBlock` no coincidiría nunca.
+  - `Local` desactiva ese SNAT. A cambio, el nodo solo reenvía a Pods que corren **en ese mismo nodo**. Por eso el Pod admin lleva `nodeSelector: k8s-worker1` y el SSH se hace a `10.10.10.11`. Enviado a `10.10.10.12`, la conexión se descarta.
+
+### 10.4 VLAN / `net1`: aquí sí importa que las IPs sean distintas
+
+- `net1` lo crea Multus a partir del NAD (macvlan sobre `e2.<vlan>`). Calico no le pone una veth `cali`, así que **ninguna NetworkPolicy aplica ahí**. El SSH admin → web por la VLAN y el acceso web → MariaDB no se filtran, y la denegación por defecto no los rompe.
+- La IP de esa interfaz la da el IPAM del NAD:
+  - `static`: una IP fija por Pod. Sencillo para el único Pod admin, incómodo para 3 réplicas de un mismo Deployment.
+  - `host-local`: un rango, pero **asignado por separado en cada worker**, así que S1 en worker1 y S2 en worker2 pueden recibir la misma IP. Es el problema de [D-005](../decisions.md) / [US-19](../historias/persona-a.md#us-19).
+  - `whereabouts`: rango global del clúster sin duplicados, pero no está instalado (§4).
+  - Alternativa habitual con `host-local`: **un NAD por worker, con rangos que no se solapen**. Sigue siendo una decisión abierta de US-19.
+- Los LXC `bbdd` y `logs` tienen IPs estáticas en el XML de VNX (§9), en la misma subred y fuera del rango de los Pods.
+
+### 10.5 Comandos para verlo en el clúster
+
+```bash
+kubectl get pods -n <ns> -o wide                         # IPs de Calico (eth0) y nodo de cada Pod
+kubectl exec -n <ns> <pod-web> -- ip -4 addr             # eth0 (172.16.x) frente a net1 (VLAN)
+ssh root@k8s-worker1 ip link | grep cali                 # las veth donde se aplican las políticas
+kubectl get networkpolicy -n <ns> -o wide
+```

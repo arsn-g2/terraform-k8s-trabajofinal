@@ -6,8 +6,9 @@ locals {
 
 resource "kubernetes_deployment_v1" "admin_server" {
   metadata {
-    name   = "admin-deployment"
-    labels = local.admin_labels    #app = "admin"
+    name      = "admin-deployment"
+    namespace = kubernetes_namespace_v1.namespace.metadata[0].name
+    labels    = local.admin_labels #app = "admin"
   }
 
   spec {
@@ -34,7 +35,8 @@ resource "kubernetes_deployment_v1" "admin_server" {
 
 resource "kubernetes_service_v1" "adm_service" {
   metadata {
-    name = "admin-service"
+    name      = "admin-service"
+    namespace = kubernetes_namespace_v1.namespace.metadata[0].name
   }
   spec {
     type = "NodePort"

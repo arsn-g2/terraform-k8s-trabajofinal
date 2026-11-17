@@ -1,3 +1,9 @@
+variable "namespace" {
+  description = "Namespace de los recursos del escenario"
+  type        = string
+  default     = "g2-workshop"
+}
+
 variable "web_num_replicas" {
   description = "Número de réplicas del Deployment web (el enunciado pide 3)"
   type        = number
@@ -12,11 +18,17 @@ variable "admin_num_replicas" {
 
 # Valores del escenario: ver docs/datos-escenario.md §8
 
-# variable "group_number" {
-#   description = "Número de grupo de prácticas. La ruta del Ingress es /servers-G<group_number> (D-001)"
-#   type        = number
-#   default     = 2
-# }
+variable "group_number" {
+  description = "Número de grupo de prácticas. La ruta del Ingress es /servers-G<group_number> (D-001)"
+  type        = number
+  default     = 2
+}
+
+variable "g2_ingress_path" {
+  description = "Ruta del Ingress para el grupo 2 (D-001)"
+  type        = string
+  default     = "/servers-G2"
+}
 
 variable "image_web" {
   description = "Imagen de los servidores web (usuario webuser, GID 1000)"
@@ -52,11 +64,11 @@ variable "image_admin" {
 #   }
 # }
 #
-# variable "ingress_class" {
-#   description = "IngressClass del Ingress Controller del escenario"
-#   type        = string
-#   default     = "nginx"
-# }
+variable "ingress_class" {
+  description = "IngressClass del Ingress Controller del escenario -> kubectl get ingressclass"
+  type        = string
+  default     = "nginx"
+}
 #
 # variable "vlan_master_if" {
 #   description = "Interfaz de los workers conectada a VlanNet (sobre ella va la subinterfaz <if>.<vlan_id>)"

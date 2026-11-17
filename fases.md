@@ -55,9 +55,9 @@ Fase 4  🔵 Verificación y entrega ►  B: US-40   A: US-41 🔀   C: US-42   
 | [US-10 · Subinterfaces VLAN en los workers](historias/persona-a.md#us-10) | 🌐 A | 3 | [US-02](historias/persona-a.md#us-02), [US-03](historias/persona-c.md#us-03) | | ✅ |
 | [US-11 · NetworkAttachmentDefinition (Multus)](historias/persona-a.md#us-11) | 🌐 A | 3 | [US-10](historias/persona-a.md#us-10), [US-19](historias/persona-a.md#us-19) | ⛔ 🤝 | ⬜ |
 | [US-12 · Escenario VNX con LXC de BBDD y logs](historias/persona-a.md#us-12) | 🌐 A | 5 | [US-02](historias/persona-a.md#us-02), [US-03](historias/persona-c.md#us-03) | | ✅ |
-| [US-13 · ConfigMap con la plantilla HTML](historias/persona-b.md#us-13) | 🖥️ B | 2 | [US-01](historias/persona-b.md#us-01) | | ⬜ |
-| [US-14 · Deployment web con página personalizada](historias/persona-b.md#us-14) | 🖥️ B | 5 | [US-13](historias/persona-b.md#us-13) | 🤝 | ⬜ |
-| [US-15 · Service ClusterIP e Ingress](historias/persona-b.md#us-15) | 🖥️ B | 3 | [US-14](historias/persona-b.md#us-14) | ⚠️ | ⬜ |
+| [US-13 · ConfigMap con la plantilla HTML](historias/persona-b.md#us-13) | 🖥️ B | 2 | [US-01](historias/persona-b.md#us-01) | | ✅ |
+| [US-14 · Deployment web con página personalizada](historias/persona-b.md#us-14) | 🖥️ B | 5 | [US-13](historias/persona-b.md#us-13) | 🤝 | ✅ |
+| [US-15 · Service ClusterIP e Ingress](historias/persona-b.md#us-15) | 🖥️ B | 3 | [US-14](historias/persona-b.md#us-14) | ⚠️ | ✅ |
 | [US-16 · Claves SSH y Secrets](historias/persona-c.md#us-16) | 🔐 C | 3 | [US-00](historias/persona-c.md#us-00), [US-01](historias/persona-b.md#us-01) | 🤝 | ⬜ |
 | [US-17 · Pod de administración](historias/persona-c.md#us-17) | 🔐 C | 5 | [US-16](historias/persona-c.md#us-16) | 🔀 | ⬜ |
 | [US-18 · Service NodePort del admin](historias/persona-c.md#us-18) | 🔐 C | 3 | [US-17](historias/persona-c.md#us-17) | | ⬜ |
