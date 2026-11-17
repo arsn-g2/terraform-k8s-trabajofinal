@@ -23,14 +23,18 @@ sudo vnx -f k8s_lab-terraform.xml -x install-terraform
 
 cd /mnt/tmp/k8s_lab-calico-v02/shared/
 git clone https://github.com/arsn-g2/terraform-k8s-trabajofinal.git
+cd /mnt/tmp/k8s_lab-calico-v02/
+code .
 
-# start the vlan and db, logs server
+# claves SSH del día (US-16): antes de crear los LXC y de terraform apply
+cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal
+chmod +x scripts/gen-keys.sh
+./scripts/gen-keys.sh
+
+# start the vlan and db, logs servers
 cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal/vnx
 sudo vnx -f vnx-vlan.xml --create
 sudo vnx -f vnx-vm-bdd-logs.xml --create
-
-cd /mnt/tmp/k8s_lab-calico-v02
-code .
 
 
 ```

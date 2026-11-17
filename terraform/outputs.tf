@@ -146,3 +146,13 @@ output "admin_service_node_port" {
   description = "Puerto para el SSH al admin: 10.10.10.11:<node_port>"
   value       = kubernetes_service_v1.adm_service.spec[0].port[0].node_port
 }
+
+# SSH (US-16)
+output "ssh_secret_names" {
+  description = "Secrets con las claves SSH (D-004): los monta US-17 en el admin y en los web"
+  value = {
+    admin_private    = kubernetes_secret_v1.ssh_admin_private.metadata[0].name
+    admin_authorized = kubernetes_secret_v1.ssh_admin_authorized.metadata[0].name
+    web_authorized   = kubernetes_secret_v1.ssh_web_authorized.metadata[0].name
+  }
+}

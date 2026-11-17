@@ -24,7 +24,7 @@
 |---|---|---|---|---|
 | 0 | [US-00 · Repositorio y convenciones](#us-00) | 2 | ⛔ | ✅ |
 | 0 | [US-03 · Cerrar las dudas pendientes](#us-03) | 1 | ⛔ | ⬜ |
-| 1 | [US-16 · Claves SSH y Secrets](#us-16) | 3 | 🤝 | ⬜ |
+| 1 | [US-16 · Claves SSH y Secrets](#us-16) | 3 | 🤝 | ✅ |
 | 1 | [US-17 · Pod de administración](#us-17) | 5 | 🔀 | ⬜ |
 | 1 | [US-18 · Service NodePort del admin](#us-18) | 3 | | ⬜ |
 | 2 | [US-24 · SSH desde el admin por la VLAN](#us-24) | 5 | 🔀 | ⬜ |
@@ -68,7 +68,7 @@ Decidirlas en equipo (o con el profesor si hace falta) y registrarlas en [decisi
 
 <a id="us-16"></a>
 ### 🔑 US-16 · Claves SSH y Secrets · 3 pts · 🤝
-**Completed:** ⬜ · **Depende de:** [US-00](#us-00), [US-01](persona-b.md#us-01) · **Bloquea a:** [US-17](#us-17), [US-20](persona-a.md#us-20), [US-21](persona-a.md#us-21)
+**Completed:** ✅ · **Depende de:** [US-00](#us-00), [US-01](persona-b.md#us-01) · **Bloquea a:** [US-17](#us-17), [US-20](persona-a.md#us-20), [US-21](persona-a.md#us-21)
 
 Según el enunciado §2.5 y [D-004](../decisions.md), **dos pares de claves independientes**, generados en el host con `ssh-keygen` por un script `scripts/gen-keys.sh` en `keys/` (ignorada por Git). Como el entorno se recrea a diario, las claves se **generan nuevas cada día**: el script debe ser no interactivo (`-N ""`), sobrescribir sin preguntar y correr antes de `terraform apply` y de crear los LXC:
 

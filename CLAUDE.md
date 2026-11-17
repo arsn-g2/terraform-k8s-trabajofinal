@@ -109,6 +109,9 @@ sudo vnx -f k8s_lab-terraform.xml --create
 sudo vnx -f k8s_lab-terraform.xml -x install-terraform   # re-run if `terraform --version` fails
 ./bin/get-master-kubeconf                          # kubeconfig → host
 ./bin/set-terraform-kubeconf                       # kubeconfig → terraform VM
+# after cloning the repo into shared/ (see datos-escenario.md §1), before creating the LXC or terraform apply:
+cd shared/terraform-k8s-trabajofinal
+chmod +x scripts/gen-keys.sh && ./scripts/gen-keys.sh   # today's SSH keys → keys/ + vnx/filetree/ssh/ (US-16), no sudo
 # teardown: ./bin/stop-k8s-calico ; sudo vnx -f k8s_lab-terraform.xml --destroy
 ```
 
