@@ -192,7 +192,7 @@ resource "kubernetes_deployment_v1" "web" {
           port { container_port = 80 }
           volume_mount {
             name       = "html"
-            mount_path = "⟪PENDIENTE: raíz de nginx en la imagen⟫"
+            mount_path = "⟪PENDIENTE: raíz de nginx en la imagen, expected -> /usr/share/nginx/html⟫"
           }
         }
         volume {
@@ -220,6 +220,50 @@ for p in $(kubectl get pods -n <ns> -l app=web -o name); do
 done
 kubectl describe pod -n <ns> <pod> | grep -A3 "template:"           # ConfigMap montado read-only
 ```
+
+### 3.5 Ingress frente a Service `LoadBalancer` ([US-15](../../../historias/persona-b.md#us-15))
+
+Trabajan en capas distintas y, en nuestro escenario, van **encadenados**: el Ingress necesita un Service `LoadBalancer` delante.
+
+**Service `type: LoadBalancer` (capa 4: IP + puerto TCP/UDP)**
+
+- Da una IP externa a **un Service**. En el laboratorio la asigna MetalLB del pool `10.10.10.20-30` y la anuncia por ARP en `k8s_LAN` (modo L2).
+- Solo ve IP y puerto, nunca el contenido HTTP. Toda conexión a `IP:puerto` va a los Pods de ese Service: no hay rutas, ni hostnames, ni terminación TLS.
+- Incluye a los otros tipos: un Service `LoadBalancer` también tiene ClusterIP y NodePorts. Por eso el controller tiene `80:30097`.
+- Si expusiéramos así los servidores web y el admin, cada uno necesitaría su propio Service con su propia IP externa.
+
+**Ingress (capa 7: HTTP)**
+
+- No es un Service y no abre ninguna IP ni puerto. Es un conjunto de reglas HTTP (host, ruta → Service:puerto), como las de `terraform/ingress.tf`.
+- Por sí solo no hace nada. Tiene que leerlo un **Ingress Controller**, aquí el Pod de ingress-nginx: un nginx que hace de proxy inverso y regenera su configuración a partir de todos los Ingress con `ingressClassName: nginx`.
+- Como entiende HTTP, un único punto de entrada sirve a varias aplicaciones por ruta o host (`/servers-G2` → web, `/servers-G3` → otro grupo…). También puede reescribir la URL (nuestro `rewrite-target: /`), terminar TLS, etc.
+
+**Cómo encajan en el laboratorio**
+
+```
+host 10.10.20.2
+   │  http://10.10.10.20/servers-G2
+   ▼
+Service ingress-nginx-controller  (LoadBalancer, IP de MetalLB 10.10.10.20)   ← L4: hace llegar el paquete al controller
+   ▼
+Pod ingress-nginx-controller      (nginx, lee nuestro Ingress g2-ingress)      ← L7: mira la ruta, reescribe /servers-G2 → /
+   ▼
+Service nginx-service             (ClusterIP 8080, solo interno)
+   ▼
+Pods web S1–S3 :80
+```
+
+- **LoadBalancer** responde a "¿cómo llega el tráfico de fuera al clúster?". Hay uno compartido, el del controller.
+- **Ingress** responde a "una vez dentro, ¿a qué aplicación HTTP va?". Hay uno por aplicación o grupo (el nuestro es `g2-ingress`).
+
+Por eso el enunciado (§4.1) pide ClusterIP + Ingress en vez de hacer `LoadBalancer` el Service web:
+- todos los grupos comparten una IP externa;
+- hay enrutado HTTP por ruta;
+- el controller es la única entrada, así que en [US-31](../../../historias/persona-b.md#us-31) la NetworkPolicy puede permitir el tráfico web solo desde los Pods del controller.
+
+El antiguo NodePort del Service web deja de responder porque, al pasar a `ClusterIP`, Kubernetes libera el puerto y kube-proxy borra sus reglas en los nodos (ver [pruebas-us15.md §3.1](pruebas-us15.md)). No lo hace ninguna opción del Ingress.
+
+**La excepción:** el **admin** usa SSH, que no es HTTP, así que un Ingress HTTP no puede enrutarlo. Por eso va por su propio Service de capa 4 (NodePort `2222→22`, área de C).
 
 ---
 

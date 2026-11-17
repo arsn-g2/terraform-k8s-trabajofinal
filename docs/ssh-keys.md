@@ -98,7 +98,7 @@ resource "kubernetes_secret_v1" "ssh_web_authorized" {
 Detalles importantes:
 - **La clave dentro de `data` es el nombre del fichero** cuando el Secret se monta como volumen. Por eso se llaman `authorized_keys` e `id_ed25519`.
 - **No usar `base64encode()`.** En `data` el provider ya codifica en base64; si lo haces tú queda codificado dos veces y `sshd` lee basura. (`binary_data` es el campo que espera base64.)
-- **Ruta de `file()`.** Las rutas relativas se resuelven desde el directorio donde corres `terraform`, no desde el `.tf`. Usar `"${path.module}/../keys"` como valor de `ssh_keys_dir`. En la VM queda `/shared/terraform-k8s-trabajofinal/keys`.
+- **Ruta de `file()`.** Las rutas relativas se resuelven desde el directorio donde corres `terraform`, no desde el `.tf`. Por eso `var.ssh_keys_dir` vale `"../keys"` y en `ssh.tf` se usa como `"${path.module}/${var.ssh_keys_dir}"` (el `default` de una variable no puede contener `path.module`). En la VM queda `/shared/terraform-k8s-trabajofinal/keys`.
 - **Un solo Secret para los 3 web:** todos aceptan la misma clave, y un Secret se puede montar en todos los Pods del Deployment.
 - **Dos Secrets separados para el admin** (privada y `authorized_keys`): es lo que recomienda el enunciado, y así cada uno se puede montar con permisos distintos.
 - **Si `keys/` no existe**, `terraform plan` falla con `no file exists at …`. Eso es lo que debe pasar: recuerda que falta correr `gen-keys.sh`.
@@ -190,7 +190,5 @@ kubectl get secret ssh-web-authorized -n <ns> \
 
 ## 9. Pendiente
 
-- `var.namespace` ([D-002](../decisions.md)) y `var.ssh_keys_dir` todavía no existen en `variables.tf`.
 - Usuario de destino en los LXC (`root` u otro): confirmar con A.
-- Añadir `vnx/filetree/ssh/` a `.gitignore`.
 - D-004 sigue en `Proposed`: pasarla a `Accepted` (con el tipo de clave ed25519) al terminar US-16.

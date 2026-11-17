@@ -44,17 +44,21 @@ python scripts/us-done.py --undo 16
 
 ### Repo state
 
-- `terraform/` is the Trabajo Final working folder. Right now it holds the provider, `variables.tf`, `outputs.tf`, and a first draft of the web and admin pieces: `web-service-deployment.tf` and `admin-service-deployment.tf` (a Deployment + NodePort Service each, namespace `default`). These are only the beginning of the work; no design decisions have been taken about them yet. Variables and outputs that no resource uses yet (scenario values such as `group_number`, `host_user_lan_ip`, `worker1_ip`, `ingress_class`, `vlan_*`) are commented out in `variables.tf`/`outputs.tf`; uncomment them when the resource that needs them is written. The target per-area file split (`namespace.tf`, `multus.tf`, `web.tf`, `ssh.tf`, `admin.tf`, `netpol.tf`) is in `plan.md` §3. Each person works in their own `.tf` file to avoid conflicts.
+- `terraform/` is the Trabajo Final working folder. It holds the provider, `variables.tf`, `outputs.tf`, `terraform.tfvars`, and:
+  - `namespace.tf`: the dedicated namespace (`var.namespace`, D-002), used by every resource;
+  - web (B): `web.tf` (ConfigMap rendered from `templates/index.html.tpl` with `templatefile()`), `web-service-deployment.tf` (web Deployment with the page sidecar + `ClusterIP` Service), `ingress.tf` (Ingress → web Service);
+  - admin (C): `admin-service-deployment.tf` (Deployment + NodePort Service, first draft).
+  Variables and outputs that no resource uses yet (`host_user_lan_ip`, `worker1_ip`, `vlan_*`) are commented out in `variables.tf`/`outputs.tf`; uncomment them when the resource that needs them is written. The target per-area file split (`namespace.tf`, `multus.tf`, `web.tf`, `ssh.tf`, `admin.tf`, `netpol.tf`) is in `plan.md` §3. Each person works in their own `.tf` file to avoid conflicts.
 - `terraform/terraform.tfvars` is tracked (`*.tfvars` is commented out in `.gitignore`) and sets `web_num_replicas = 3` (the PDF value). `admin_num_replicas` defaults to 1.
 - `temp-terraform-examples/terraform-k8s-example/` is the team's P1.4 k8s solution (Deployment + Service with locals, deny-all, ingress/egress NetworkPolicies, outputs). **It is the style reference.** `terraform-openstack-example/` is OpenStack and not relevant here.
 - Folders that contain an empty `test.txt` are placeholders. Delete the `test.txt` once the folder has real content.
-- Planned but not written yet: `scripts/gen-keys.sh` (`scripts/create-keypairs.sh` is the old P1.4 OpenStack script and does not apply), `scripts/setup-vlan-workers.sh`, `scripts/verify.sh`, `vnx/k8s_lab-vms-vlan.xml` + `vnx/filetree/`, `README.md`.
+- Planned but not written yet: `scripts/gen-keys.sh` (`scripts/create-keypairs.sh` is the old P1.4 OpenStack script and does not apply), `scripts/setup-vlan-workers.sh`, `scripts/verify.sh`, `vnx/filetree/` content, `README.md`. The VNX XMLs exist as drafts: `vnx/vnx-vlan.xml` and `vnx/vnx-vm-bdd-logs.xml`.
 - Before creating or copying `.tf` files into a new working folder, ask the user.
 
 ## What has to be deployed
 
 Full requirements: PDF §2–§5. Stories: `historias/`.
-- **Web**: a Deployment with 3 replicas of `dgsgiros/nginx-ssh:latest` (user `webuser`, GID 1000). `index.html` comes from a ConfigMap template, and an initContainer (D-003) writes the Pod name into it, in a shared `emptyDir`.
+- **Web**: a Deployment with 3 replicas of `dgsgiros/nginx-ssh:latest` (user `webuser`, GID 1000). `index.html` comes from a ConfigMap template, and a sidecar container (D-009, proposed; supersedes the initContainer of D-003) writes the Pod name into it, in a shared `emptyDir`.
 - **Admin**: one Pod of `dgsgiros/admin-ssh:latest` (user `adminuser`, GID 1000), with `fsGroup: 1000` and a `nodeSelector` of `kubernetes.io/hostname=k8s-worker1`.
 - **Namespace**: a dedicated one, `var.namespace` (D-002), not `default`.
 - **VLAN**:
@@ -80,6 +84,7 @@ Full requirements: PDF §2–§5. Stories: `historias/`.
 ## Environment
 
 The lab environment lives on temporary storage and is **rebuilt from scratch every working day**. Only this repo persists. So every step on the nodes or the LXC must be a script or Terraform in the repo, never a manual step, and the team should `git push` often.
+- Never create files (including a `CLAUDE.md`) in the scenario root `/mnt/tmp/k8s_lab-calico-v02/` or anywhere else outside this repo. They are lost at the next rebuild, and this file is the only CLAUDE.md the project needs.
 
 - Scenario root on the host: `/mnt/tmp/k8s_lab-calico-v02/`. The repo is cloned at `shared/terraform-k8s-trabajofinal/` under it (see `scripts/host-script.sh`). Edit files on the host.
 - `terraform` LXC VM (10.10.10.13) mounts `shared/` at `/shared`. **Run all `terraform` commands in `/shared/terraform-k8s-trabajofinal/terraform`** inside the VM (`ssh terraform`).
@@ -126,7 +131,7 @@ Terraform loads **every `.tf` in the folder** as one configuration, so never mix
 
 ## Git conventions (`docs/convenciones.md`)
 
-- Never work directly on `main`. Use one branch per story, `us-<NN>-<descripcion-corta>`, all lowercase, with no accents or ñ.
+- Never work directly on `main`.
 - Commit messages: `US-<NN>: <qué se hizo, en presente>`.
 - PR title: `US-<NN> · <título>`. In the PR body, copy the story's 🧪 criteria and tick the ones that were tested. Someone else reviews and merges, never the author. Merges are squashed.
 - Never commit `keys/`, private keys or `*.tfstate*`.
