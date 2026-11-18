@@ -53,9 +53,25 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 - **Consequences:** Secret data still ends up in the tfstate, so the state must stay out of git.
 
 ### D-005 VLAN IPAM
-- **Status:** Pending (US-19)
-- **Context:** `host-local` IPAM can give the same IP to Pods on different workers. `whereabouts` is **not** installed in the lab (checked 2026-11-13); available CNI plugins include `macvlan`, `vlan`, `host-local`, `static` and `dhcp`.
-- **Options:** `static` for the admin plus, for the web Deployment: install `whereabouts`; `dhcp` IPAM with dnsmasq in an LXC; or per-node `host-local` NADs with node affinity.
+- **Date / author:** 2026-11-16 / Persona A
+- **Status:** Acepted.
+- **Context:** the web servers are a Deployment of 3 replicas, so every Pod shares one template and one Multus annotation, and the replicas land on both workers. The P1.3 NAD uses `static` IPAM with the IP in each Pod's annotation, which a Deployment cannot do. `whereabouts` is not installed in the lab (checked 2026-11-13).
+- **Options considered:**
+  - `static` (as in P1.3): tested; the Pods never start (`IPAM plugin returned missing IP config`).
+  - `host-local`: tested; each worker keeps its own counter, so Pods on different workers get the same IP (10.1.2.10 and .11 on both).
+  - `whereabouts`: tested; one cluster-wide `IPPool` stored in the Kubernetes API; 4 replicas got 4 different IPs across both workers.
+  - `dhcp` with dnsmasq in an LXC: not tested; needs the CNI `dhcp` daemon on every worker plus a DHCP server on the VLAN.
+  - one `host-local` NAD per node with node affinity: discarded; a Deployment has a single annotation for all its replicas.
+- **Decision:** two NADs on VLAN 1000 (`10.1.2.0/24`), both `macvlan` in `bridge` mode on `e2.1000`:
+  - admin: `static` IPAM with `"capabilities": {"ips": true}` and its fixed IP (`10.1.2.5`) in the Pod annotation;
+  - web Deployment: `whereabouts` IPAM, range `10.1.2.10`–`10.1.2.50`.
+  The LXC keep fixed IPs in the VNX XML (`bbdd` 10.1.2.100, `logs` 10.1.2.101).
+- **Why:** it is the only tested option that gives unique IPs to replicas on different workers. Its registry lives in the API, like Calico's IPAM for `eth0`. It installs with one `kubectl apply`, and the nodes can pull its image. Evidence: `docs/investigacion-multus.md` §4–§6 and §8.
+- **Consequences:**
+  - `whereabouts` must be installed on every lab start-up, before the web Pods (US-11). Pin a version instead of the `:latest` image.
+  - Fixed IPs (admin, LXC) must stay outside the whereabouts range, because whereabouts does not know about them.
+  - NetworkPolicies do not filter `net1` (§7): traffic on the VLAN is protected only by SSH keys and DB users (US-33).
+  - Files: `terraform/multus.tf` (two `kubernetes_manifest` NADs), `scripts/setup-vlan-workers.sh`, the VNX XML (one VLAN, no `vlan-router`).
 
 ### D-006 Log server function
 - **Status:** Proposed (US-21)
@@ -82,3 +98,22 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 - **Decision:** Option A (sidecar).
 - **Why:** to learn and show the sidecar pattern (containers sharing a volume, parallel lifecycle), which is also what you need when content changes while the Pod runs. B would be enough for a value that never changes, such as the Pod name.
 - **Consequences:** the sidecar must stay alive after writing the page (for example `sleep infinity`); otherwise the kubelet restarts it and the Pod goes into `CrashLoopBackOff`. Nginx can start before the page exists, so the first requests may return 403/404 for a moment. The sidecar runs for the Pod's whole life. US-14 (`historias/persona-b.md`) and `docs/useful/web/guia-web.md` §3.3 describe Option B and need updating.
+
+### D-009 One shared VLAN: 1000, 10.1.2.0/24
+- **Date / author:** 2026-11-16 / Persona A, agreed by the team
+- **Status:** Accepted
+- **Context:** the PDF (§1 and §2) describes one VLAN shared by the web Pods, the admin Pod and the two LXC. The P1.3 template `k8s_lab-vms-vlan.xml`, which our `vnx/` files are based on, has two VLANs (1000 and 1001) joined by a `vlan-router`.
+- **Options considered:** keep the template's two VLANs and the router, with `bbdd` on 1000 and `logs` on 1001; or one VLAN for everything.
+- **Decision:** one VLAN, ID 1000, subnet `10.1.2.0/24`. Addressing plan: admin `10.1.2.5` (static), web Pods `10.1.2.10`–`10.1.2.50` (whereabouts, D-005), `bbdd` `10.1.2.100`, `logs` `10.1.2.101`.
+- **Why:** it is what the PDF describes. VLAN 1000 and `10.1.2.0/24` were tested with Calico in US-19 (`docs/investigacion-multus.md` §2–§3). One VLAN needs no router and fewer moving parts.
+- **Consequences:** `logs` moves to VLAN 1000 and the `vlan-router` is removed from the VNX files (US-12). `scripts/setup-vlan-workers.sh` creates only `e2.1000` (US-10). Terraform uses `vlan_id = 1000` and `vlan_subnet = "10.1.2.0/24"` (US-11).
+
+
+### D-010 whereabouts installed by a script on every start-up
+- **Date / author:** 2026-11-17 / Persona A
+- **Status:** Proposed
+- **Context:** D-005 picks `whereabouts` for the web Pods. The scenario does not include it and is rebuilt from scratch every day, so it has to be installed every time (US-11).
+- **Options considered:** install it from Terraform (one `kubernetes_manifest` per object of the upstream YAML); or a script run at start-up, like `setup-vlan-workers.sh`.
+- **Decision:** `scripts/setup-whereabouts.sh`, run on every start-up after `./bin/get-master-kubeconf` and before `terraform apply`. It installs a fixed release, `v0.9.4`, and pins the image to the same tag instead of `:latest`.
+- **Why:** whereabouts belongs to the cluster, like Multus: a DaemonSet in `kube-system` that copies the IPAM plugin to every node, plus two CRDs. It is not part of our application, and `terraform destroy` should not remove it. A fixed tag makes every start-up install the same version.
+- **Consequences:** start-up order: `setup-vlan-workers.sh` → `setup-whereabouts.sh` → VNX → `terraform apply`. If the script has not run, the web Pods stay in `ContainerCreating` because the node has no `whereabouts` plugin. `docs/datos-escenario.md` §1 and §4 describe it.

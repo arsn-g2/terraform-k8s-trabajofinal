@@ -1,0 +1,22 @@
+8abb7681-8d4f-4626-ab24-b2803a8adc50
+    Bridge VlanNet
+        Port k8s-worker2-e2
+            Interface k8s-worker2-e2
+        Port bbdd-e1
+            tag: 1000
+            Interface bbdd-e1
+        Port vlan-router-e2
+            tag: 1001
+            Interface vlan-router-e2
+        Port logs-e1
+            tag: 1001
+            Interface logs-e1
+        Port VlanNet
+            Interface VlanNet
+                type: internal
+        Port vlan-router-e1
+            tag: 1000
+            Interface vlan-router-e1
+        Port k8s-worker1-e2
+            Interface k8s-worker1-e2
+    ovs_version: "3.5.0"

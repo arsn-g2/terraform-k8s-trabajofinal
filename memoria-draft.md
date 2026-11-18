@@ -44,11 +44,11 @@ En esta fase cada uno trabajó en paralelo sobre su área, en su propio archivo 
 
 ### 4.1 Red y VNX
 
-**Investigación de Multus e IPAM (US-19).** Investigamos cómo Multus agrega una segunda interfaz (`net1`) a los Pods y probamos distintos tipos de `NetworkAttachmentDefinition` y de IPAM. Comprobamos que `host-local` asigna direcciones por nodo, de modo que dos Pods en workers distintos pueden recibir la misma IP de la VLAN (D-005). ⟪PENDIENTE: solución elegida⟫
+**Investigación de Multus e IPAM (US-19).** Investigamos cómo Multus agrega una segunda interfaz (`net1`) a los Pods y probamos distintos tipos de `NetworkAttachmentDefinition` y de IPAM. Comprobamos que `host-local` asigna direcciones por nodo, de modo que dos Pods en workers distintos pueden recibir la misma IP de la VLAN (D-005). Elegimos `whereabouts` para los Pods web, que guarda las IPs asignadas en un `IPPool` común a todo el clúster, y `static` para el único Pod admin (D-005). Comprobamos también que las NetworkPolicies de Calico no filtran `net1`.
 
 **Subinterfaces VLAN (US-10).** Creamos las subinterfaces `e2.<vlan>` en los workers mediante el script `setup-vlan-workers.sh`, que es idempotente para poder correrlo todos los días.
 
-**NetworkAttachmentDefinition (US-11).** Desplegamos la NAD con `kubernetes_manifest`, ya que el provider no tiene un recurso nativo. Usamos `macvlan` en modo *bridge* sobre `e2.<vlan>` y la probamos con un Pod de prueba.
+**NetworkAttachmentDefinition (US-11).** Creamos con `kubernetes_manifest` dos NAD, porque el provider no tiene un recurso nativo para ellas. Las dos son `macvlan` en modo *bridge* sobre `e2.1000`: `vlan1000-web` usa IPAM `whereabouts` en el rango `10.1.2.10`–`10.1.2.50`, y `vlan1000-admin` usa IPAM `static`, de modo que el Pod admin pide `10.1.2.5` en su anotación. Como `whereabouts` no viene con el escenario, el script `setup-whereabouts.sh` lo instala en cada arranque con una versión fija (D-010). Lo probamos con dos Pods en workers distintos, que recibieron IPs diferentes y se hicieron ping por la VLAN, y con un Pod con la IP fija del admin.
 
 **Escenario VNX (US-12).** Escribimos los escenarios VNX con los LXC `bbdd` y `logs` sobre `VlanNet`, basados en `k8s_lab-vms-vlan.xml` de P1.3, y comprobamos que responden al ping.
 
@@ -133,7 +133,7 @@ El registro completo está en [decisions.md](decisions.md). Las más relevantes:
 | D-002 | Namespace dedicado en lugar de `default` |
 | D-009 | Contenedor sidecar para personalizar `index.html` (sustituye a D-003, initContainer) |
 | D-004 | Solo autenticación por clave, con dos pares SSH |
-| D-005 | IPAM de la VLAN ⟪PENDIENTE⟫ |
+| D-005 | IPAM de la VLAN: `whereabouts` para los web y `static` para el admin |
 | D-006 | rsyslog en el puerto 514 como servidor de logs |
 | D-007 | Cliente de MariaDB con egress bloqueado ⟪PENDIENTE⟫ |
 | D-008 | Usamos la versión del enunciado del 5/11/2026 |

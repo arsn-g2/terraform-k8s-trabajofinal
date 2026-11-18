@@ -76,30 +76,50 @@ variable "ingress_class" {
   default     = "nginx"
 }
 #
-# variable "vlan_master_if" {
-#   description = "Interfaz de los workers conectada a VlanNet (sobre ella va la subinterfaz <if>.<vlan_id>)"
-#   type        = string
-#   default     = "e2"
-# }
-#
-# variable "vlan_id" {
-#   description = "VLAN ID de la red compartida con los LXC. Pendiente (US-03)"
-#   type        = number
-#   default     = null
-#
-#   validation {
-#     condition     = var.vlan_id == null ? true : (var.vlan_id >= 1 && var.vlan_id <= 4094)
-#     error_message = "vlan_id debe estar entre 1 y 4094."
-#   }
-# }
-#
-# variable "vlan_subnet" {
-#   description = "Subred de la VLAN en notación CIDR, por ejemplo 10.1.2.0/24. Pendiente (US-03)"
-#   type        = string
-#   default     = null
-#
-#   validation {
-#     condition     = var.vlan_subnet == null ? true : can(cidrhost(var.vlan_subnet, 0))
-#     error_message = "vlan_subnet debe ser un CIDR válido, por ejemplo 10.1.2.0/24."
-#   }
-# }
+variable "vlan_master_if" {
+  description = "Interfaz de los workers conectada a VlanNet (sobre ella va la subinterfaz <if>.<vlan_id>)"
+  type        = string
+  default     = "e2"
+}
+
+variable "vlan_id" {
+  description = "VLAN ID de la red compartida con los LXC (D-009)"
+  type        = number
+  default     = 1000
+
+  validation {
+    condition     = var.vlan_id == null ? true : (var.vlan_id >= 1 && var.vlan_id <= 4094)
+    error_message = "vlan_id debe estar entre 1 y 4094."
+  }
+}
+
+variable "vlan_subnet" {
+  description = "Subred de la VLAN en notación CIDR, por ejemplo 10.1.2.0/24 (D-009)"
+  type        = string
+  default     = "10.1.2.0/24"
+
+  validation {
+    condition     = var.vlan_subnet == null ? true : can(cidrhost(var.vlan_subnet, 0))
+    error_message = "vlan_subnet debe ser un CIDR válido, por ejemplo 10.1.2.0/24."
+  }
+}
+
+# Plan de direcciones de la VLAN (D-005, D-009)
+
+variable "vlan_web_range_start" {
+  description = "Primera IP que whereabouts puede dar a los Pods web"
+  type        = string
+  default     = "10.1.2.10"
+}
+
+variable "vlan_web_range_end" {
+  description = "Última IP que whereabouts puede dar a los Pods web"
+  type        = string
+  default     = "10.1.2.50"
+}
+
+variable "vlan_admin_ip" {
+  description = "IP fija del Pod admin en la VLAN (IPAM static). Tiene que quedar fuera del rango de los web"
+  type        = string
+  default     = "10.1.2.5"
+}

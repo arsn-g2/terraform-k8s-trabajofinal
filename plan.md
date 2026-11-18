@@ -62,11 +62,11 @@ La versión del enunciado del **5 de noviembre de 2026** y el entorno desplegado
 |---|---|---|
 | 1 | Dirección de las claves SSH | ✅ Enunciado §2.5: **dos pares**. Par 1 (admin → web/LXC): privada en el admin, pública en los web y los LXC. Par 2 (host → admin): privada en el host, pública en el admin ([D-004](decisions.md)) |
 | 2 | Número de grupo `X` | ✅ Grupo 2, ruta `/servers-G2` ([D-001](decisions.md)) |
-| 3 | ID de VLAN y subred | ⏳ **Abierta.** Como referencia, `k8s_lab-vms-vlan.xml` usa los tags 1000/1001 con `10.1.2.0/24` y `10.1.3.0/24` |
+| 3 | ID de VLAN y subred | ✅ Una sola VLAN compartida: **1000**, `10.1.2.0/24` ([D-009](decisions.md)) |
 | 4 | Imágenes | ✅ Enunciado §2.1: `dgsgiros/nginx-ssh:latest` (`webuser`) y `dgsgiros/admin-ssh:latest` (`adminuser`), ambos GID 1000 y con `sudo`. Traen ping, nmap, curl, ip e ifconfig. Falta comprobar si traen cliente de MariaDB ([D-007](decisions.md)) |
 | 5 | IP del host en `user_LAN` | ✅ `10.10.20.2` |
 | 6 | Función del servidor de logs | ⏳ Propuesta: rsyslog en 514 UDP/TCP ([D-006](decisions.md)) |
-| 7 | IPAM de la VLAN | ⏳ **Abierta.** `whereabouts` no está instalado. Se investiga en [US-19](historias/persona-a.md#us-19) ([D-005](decisions.md)) |
+| 7 | IPAM de la VLAN | ✅ **Cerrada.** `whereabouts` para los web y `static` para el admin, probado en [US-19](historias/persona-a.md#us-19) ([D-005](decisions.md)) |
 
 ---
 

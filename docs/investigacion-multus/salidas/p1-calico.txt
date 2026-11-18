@@ -1,0 +1,66 @@
+### Prueba 1 · Multus (macvlan sobre e2.1000) con Calico · 2026-11-15 19:33:17
+
+$ kubectl -n multus-poc get net-attach-def
+NAME       AGE
+vlan1000   8m56s
+
+$ kubectl -n multus-poc get pods -o wide
+NAME   READY   STATUS    RESTARTS   AGE     IP              NODE          NOMINATED NODE   READINESS GATES
+vma3   1/1     Running   0          8m56s   172.16.194.69   k8s-worker1   <none>           <none>
+vma4   1/1     Running   0          8m56s   172.16.126.1    k8s-worker2   <none>           <none>
+
+$ kubectl -n multus-poc exec vma3 -- ip addr show net1
+4: net1@if13: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue state UP qlen 1000
+    link/ether 76:e2:e0:8a:c0:e6 brd ff:ff:ff:ff:ff:ff
+    inet 10.1.2.200/24 brd 10.1.2.255 scope global net1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::74e2:e0ff:fe8a:c0e6/64 scope link 
+       valid_lft forever preferred_lft forever
+
+$ kubectl -n multus-poc exec vma4 -- ip addr show net1
+4: net1@if9: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue state UP qlen 1000
+    link/ether ae:65:59:59:a9:fc brd ff:ff:ff:ff:ff:ff
+    inet 10.1.2.201/24 brd 10.1.2.255 scope global net1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::ac65:59ff:fe59:a9fc/64 scope link 
+       valid_lft forever preferred_lft forever
+
+$ network-status de vma3 (anotación que escribe Multus)
+[{
+    "name": "k8s-pod-network",
+    "interface": "eth0",
+    "ips": [
+        "172.16.194.69"
+    ],
+    "mac": "a2:f3:7c:b7:87:11",
+    "default": true,
+    "dns": {}
+},{
+    "name": "multus-poc/vlan1000",
+    "interface": "net1",
+    "ips": [
+        "10.1.2.200"
+    ],
+    "mac": "76:e2:e0:8a:c0:e6",
+    "dns": {}
+}]
+
+$ kubectl -n multus-poc exec vma3 -- ping -c3 10.1.2.100   # vma3 -> bbdd
+PING 10.1.2.100 (10.1.2.100): 56 data bytes
+64 bytes from 10.1.2.100: seq=0 ttl=64 time=1.177 ms
+64 bytes from 10.1.2.100: seq=1 ttl=64 time=1.022 ms
+64 bytes from 10.1.2.100: seq=2 ttl=64 time=0.731 ms
+
+--- 10.1.2.100 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.731/0.976/1.177 ms
+
+$ kubectl -n multus-poc exec vma3 -- ping -c3 10.1.2.201   # vma3 (worker1) -> vma4 (worker2)
+PING 10.1.2.201 (10.1.2.201): 56 data bytes
+64 bytes from 10.1.2.201: seq=0 ttl=64 time=0.885 ms
+64 bytes from 10.1.2.201: seq=1 ttl=64 time=0.635 ms
+64 bytes from 10.1.2.201: seq=2 ttl=64 time=1.764 ms
+
+--- 10.1.2.201 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.635/1.094/1.764 ms

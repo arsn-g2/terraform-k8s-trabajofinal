@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: __NAME__
+spec:
+  replicas: 4
+  selector:
+    matchLabels: { app: __NAME__ }
+  template:
+    metadata:
+      labels: { app: __NAME__ }
+      annotations:
+        k8s.v1.cni.cncf.io/networks: __NAD__
+    spec:
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels: { app: __NAME__ }
+      containers:
+      - name: alpine
+        image: alpine
+        command: ["/bin/ash", "-c", "trap : TERM INT; sleep infinity & wait"]

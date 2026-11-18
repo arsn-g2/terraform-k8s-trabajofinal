@@ -46,13 +46,14 @@ python scripts/us-done.py --undo 16
 
 - `terraform/` is the Trabajo Final working folder. It holds the provider, `variables.tf`, `outputs.tf`, `terraform.tfvars`, and:
   - `namespace.tf`: the dedicated namespace (`var.namespace`, D-002), used by every resource;
+  - network (A): `multus.tf` (NADs `vlan1000-web`, whereabouts, and `vlan1000-admin`, static; D-005, D-009);
   - web (B): `web.tf` (ConfigMap rendered from `templates/index.html.tpl` with `templatefile()`), `web-service-deployment.tf` (web Deployment with the page sidecar + `ClusterIP` Service), `ingress.tf` (Ingress → web Service);
   - admin (C): `admin-service-deployment.tf` (Deployment + NodePort Service, first draft).
-  Variables and outputs that no resource uses yet (`host_user_lan_ip`, `worker1_ip`, `vlan_*`) are commented out in `variables.tf`/`outputs.tf`; uncomment them when the resource that needs them is written. The target per-area file split (`namespace.tf`, `multus.tf`, `web.tf`, `ssh.tf`, `admin.tf`, `netpol.tf`) is in `plan.md` §3. Each person works in their own `.tf` file to avoid conflicts.
+  Variables and outputs that no resource uses yet (`host_user_lan_ip`, `worker1_ip`) are commented out in `variables.tf`/`outputs.tf`; uncomment them when the resource that needs them is written. The target per-area file split (`namespace.tf`, `multus.tf`, `web.tf`, `ssh.tf`, `admin.tf`, `netpol.tf`) is in `plan.md` §3. Each person works in their own `.tf` file to avoid conflicts.
 - `terraform/terraform.tfvars` is tracked (`*.tfvars` is commented out in `.gitignore`) and sets `web_num_replicas = 3` (the PDF value). `admin_num_replicas` defaults to 1.
 - `temp-terraform-examples/terraform-k8s-example/` is the team's P1.4 k8s solution (Deployment + Service with locals, deny-all, ingress/egress NetworkPolicies, outputs). **It is the style reference.** `terraform-openstack-example/` is OpenStack and not relevant here.
 - Folders that contain an empty `test.txt` are placeholders. Delete the `test.txt` once the folder has real content.
-- Planned but not written yet: `scripts/gen-keys.sh` (`scripts/create-keypairs.sh` is the old P1.4 OpenStack script and does not apply), `scripts/setup-vlan-workers.sh`, `scripts/verify.sh`, `vnx/filetree/` content, `README.md`. The VNX XMLs exist as drafts: `vnx/vnx-vlan.xml` and `vnx/vnx-vm-bdd-logs.xml`.
+- Planned but not written yet: `scripts/gen-keys.sh` (`scripts/create-keypairs.sh` is the old P1.4 OpenStack script and does not apply), `scripts/verify.sh`, `vnx/filetree/` content, `README.md`. The LXC scenario is `vnx/vnx-vm-bdd-logs.xml` (one VLAN, D-009).
 - Before creating or copying `.tf` files into a new working folder, ask the user.
 
 ## What has to be deployed
@@ -65,7 +66,7 @@ Full requirements: PDF §2–§5. Stories: `historias/`.
   - Pods get an extra interface (`net1`) through a Multus `NetworkAttachmentDefinition`, created with `kubernetes_manifest` because the provider has no native resource for it. The plan is `macvlan` bridge on `e2.<vlan>`.
   - The workers need `e2.<vlan>` subinterfaces. The interface is **`e2`**, not `eth2`, and it is on the OVS net `VlanNet`.
   - The LXC `bbdd` (MariaDB) and `logs` (rsyslog on 514, D-006) live in a separate VNX XML based on `k8s_lab-vms-vlan.xml` from P1.3. It uses `exec` steps to install packages and `filetree` for configs and `authorized_keys`.
-  - The VLAN ID, subnet and IPAM are still open (US-03, US-19, D-005).
+  - VLAN 1000, subnet `10.1.2.0/24` (D-009). IPAM: `whereabouts` for the web Pods, installed on every start-up by `scripts/setup-whereabouts.sh` (D-010), and `static` for the admin (D-005). NADs: `vlan1000-web` and `vlan1000-admin`.
 - **SSH (keys only, D-004)**: two pairs, generated each day by `ssh-keygen` into the git-ignored `keys/` and loaded with `file()` into three `kubernetes_secret_v1` (never `kubectl create secret`):
   - `ssh-admin-private`: the pair 1 private key, for the admin Pod;
   - `ssh-admin-authorized`: the pair 2 public key, for host → admin;
@@ -94,7 +95,7 @@ The lab environment lives on temporary storage and is **rebuilt from scratch eve
   - host 10.10.20.2 on `user_LAN`;
   - MetalLB pool `10.10.10.20-30`.
   - Details are in `docs/datos-escenario.md`.
-- Multus (thick) and its NAD CRD are already installed. `whereabouts` is **not**.
+- Multus (thick) and its NAD CRD are already installed. `whereabouts` is **not** part of the scenario: `scripts/setup-whereabouts.sh` installs it on every start-up (D-010).
 - Provider: `hashicorp/kubernetes` pinned to `2.23.0`. `.terraform.lock.hcl` is not committed. Prefer the `_v1` resources.
 
 ### Daily bring-up (host)

@@ -1,0 +1,26 @@
+--- whereabouts v0.9.4
+customresourcedefinition.apiextensions.k8s.io/ippools.whereabouts.cni.cncf.io created
+customresourcedefinition.apiextensions.k8s.io/overlappingrangeipreservations.whereabouts.cni.cncf.io created
+serviceaccount/whereabouts created
+clusterrolebinding.rbac.authorization.k8s.io/whereabouts created
+clusterrole.rbac.authorization.k8s.io/whereabouts-cni created
+configmap/whereabouts-config created
+daemonset.apps/whereabouts created
+Waiting for daemon set spec update to be observed...
+Waiting for daemon set "whereabouts" rollout to finish: 0 of 3 updated pods are available...
+Waiting for daemon set "whereabouts" rollout to finish: 1 of 3 updated pods are available...
+Waiting for daemon set "whereabouts" rollout to finish: 2 of 3 updated pods are available...
+daemon set "whereabouts" successfully rolled out
+NAME          DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE   CONTAINERS    IMAGES                                            SELECTOR
+whereabouts   3         3         3       3            3           <none>          38s   whereabouts   ghcr.io/k8snetworkplumbingwg/whereabouts:v0.9.4   name=whereabouts
+--- whereabouts v0.9.4
+customresourcedefinition.apiextensions.k8s.io/ippools.whereabouts.cni.cncf.io unchanged
+customresourcedefinition.apiextensions.k8s.io/overlappingrangeipreservations.whereabouts.cni.cncf.io unchanged
+serviceaccount/whereabouts unchanged
+clusterrolebinding.rbac.authorization.k8s.io/whereabouts unchanged
+clusterrole.rbac.authorization.k8s.io/whereabouts-cni unchanged
+configmap/whereabouts-config unchanged
+daemonset.apps/whereabouts unchanged
+daemon set "whereabouts" successfully rolled out
+NAME          DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE    CONTAINERS    IMAGES                                            SELECTOR
+whereabouts   3         3         3       3            3           <none>          2m9s   whereabouts   ghcr.io/k8snetworkplumbingwg/whereabouts:v0.9.4   name=whereabouts

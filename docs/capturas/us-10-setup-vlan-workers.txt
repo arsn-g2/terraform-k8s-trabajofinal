@@ -1,0 +1,27 @@
+### US-10 · primera ejecución (workers sin subinterfaz) · 2026-11-16 21:16:21
+--- k8s-worker1: e2.1000
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+13: e2.1000@e2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    vlan protocol 802.1Q id 1000 <REORDER_HDR> addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 
+--- k8s-worker2: e2.1000
+Warning: Permanently added 'k8s-worker2' (ED25519) to the list of known hosts.
+Warning: Permanently added 'k8s-worker2' (ED25519) to the list of known hosts.
+9: e2.1000@e2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    vlan protocol 802.1Q id 1000 <REORDER_HDR> addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 
+
+### US-10 · segunda ejecución (idempotencia)
+--- k8s-worker1: e2.1000
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+13: e2.1000@e2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    vlan protocol 802.1Q id 1000 <REORDER_HDR> addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 
+--- k8s-worker2: e2.1000
+Warning: Permanently added 'k8s-worker2' (ED25519) to the list of known hosts.
+Warning: Permanently added 'k8s-worker2' (ED25519) to the list of known hosts.
+9: e2.1000@e2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    vlan protocol 802.1Q id 1000 <REORDER_HDR> addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 
+
+### US-10 · VLAN ID no válido
+VLAN ID no válido: 5000 (tiene que estar entre 1 y 4094)
+(salida con error, como se esperaba)

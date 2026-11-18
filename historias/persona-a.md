@@ -20,10 +20,10 @@
 | Fase | Historia | Pts | Marcas | Completed |
 |---|---|---|---|---|
 | 0 | [US-02 · Levantar el escenario y recopilar datos](#us-02) | 2 | | ✅ |
-| 1 | [US-19 · Investigación: Multus, tipo de NAD e IPAM](#us-19) | 3 | ⛔ | ⬜ |
-| 1 | [US-10 · Subinterfaces VLAN en los workers](#us-10) | 3 | | ⬜ |
-| 1 | [US-11 · NetworkAttachmentDefinition](#us-11) | 3 | ⛔ 🤝 | ⬜ |
-| 1 | [US-12 · Escenario VNX con LXC](#us-12) | 5 | | ⬜ |
+| 1 | [US-19 · Investigación: Multus, tipo de NAD e IPAM](#us-19) | 3 | ⛔ | ✅ |
+| 1 | [US-10 · Subinterfaces VLAN en los workers](#us-10) | 3 | | ✅ |
+| 1 | [US-11 · NetworkAttachmentDefinition](#us-11) | 3 | ⛔ 🤝 | ✅ |
+| 1 | [US-12 · Escenario VNX con LXC](#us-12) | 5 | | ✅ |
 | 2 | [US-20 · MariaDB en el LXC `bbdd`](#us-20) | 5 | 🤝 🔀 | ⬜ |
 | 2 | [US-21 · Servidor de logs](#us-21) | 3 | | ⬜ |
 | 3 | [US-33 · Validar el tráfico de la VLAN con las políticas](#us-33) | 3 | 🔀 | ⬜ |
@@ -83,7 +83,7 @@ sudo vnx -f k8s_lab-terraform.xml -x install-terraform
 
 <a id="us-19"></a>
 ### 🌐 US-19 · Investigación: Multus, tipo de NAD e IPAM · 3 pts · ⛔
-**Completed:** ⬜ · **Depende de:** [US-02](#us-02) · **Bloquea a:** [US-11](#us-11)
+**Completed:** ✅ · **Depende de:** [US-02](#us-02) · **Bloquea a:** [US-11](#us-11)
 
 *Spike* de investigación para cuando empiece el trabajo de la VLAN. Se puede hacer en cuanto el entorno esté levantado: no necesita Terraform ni los LXC. El resultado son decisiones, no código de entrega.
 
@@ -115,7 +115,7 @@ sudo vnx -f k8s_lab-terraform.xml -x install-terraform
 
 <a id="us-10"></a>
 ### 🌐 US-10 · Subinterfaces VLAN en los workers · 3 pts
-**Completed:** ⬜ · **Depende de:** [US-02](#us-02), [US-03](persona-c.md#us-03)
+**Completed:** ✅ · **Depende de:** [US-02](#us-02), [US-03](persona-c.md#us-03)
 
 Script `scripts/setup-vlan-workers.sh` que, en `k8s-worker1` y `k8s-worker2` (por SSH como `root`), cree la subinterfaz VLAN sobre **`e2`**, siguiendo la práctica 1.3 (enunciado §2.2):
 
@@ -130,7 +130,7 @@ ip link set e2.<vlan> up
 
 <a id="us-11"></a>
 ### 🌐 US-11 · NetworkAttachmentDefinition (Multus) · 3 pts · ⛔ 🤝
-**Completed:** ⬜ · **Depende de:** [US-10](#us-10), [US-19](#us-19) · **Bloquea a:** [US-22](persona-b.md#us-22), [US-24](persona-c.md#us-24)
+**Completed:** ✅ · **Depende de:** [US-10](#us-10), [US-19](#us-19) · **Bloquea a:** [US-22](persona-b.md#us-22), [US-24](persona-c.md#us-24)
 
 Pasar a Terraform lo que salió de la investigación de [US-19](#us-19). En `multus.tf`, crear la NAD con `kubernetes_manifest` (`apiVersion: k8s.cni.cncf.io/v1`), con el tipo de plugin y el IPAM de [D-005](../decisions.md) (en principio `macvlan` modo `bridge` con `master: e2.<vlan>`), en el namespace del proyecto. Si el IPAM elegido necesita algo instalado en los nodos (por ejemplo, `whereabouts`), automatizarlo para que se repita cada día.
 
@@ -142,7 +142,7 @@ Pasar a Terraform lo que salió de la investigación de [US-19](#us-19). En `mul
 
 <a id="us-12"></a>
 ### 🌐 US-12 · Escenario VNX con LXC de BBDD y logs · 5 pts
-**Completed:** ⬜ · **Depende de:** [US-02](#us-02), [US-03](persona-c.md#us-03)
+**Completed:** ✅ · **Depende de:** [US-02](#us-02), [US-03](persona-c.md#us-03)
 
 Copiar `../../k8s_lab-vms-vlan.xml` (práctica 1.3) a `vnx/` y dejar dos contenedores LXC (`bbdd` y `logs`) conectados a `VlanNet` con el `<vlan><tag id="<vlan>"/></vlan>` acordado y las IPs del plan de direccionamiento de [US-11](#us-11) (enunciado §2.6). Quitar las VMs de ejemplo (`vmA2`, `vmB2`, `vlan-router`) que no hagan falta.
 
