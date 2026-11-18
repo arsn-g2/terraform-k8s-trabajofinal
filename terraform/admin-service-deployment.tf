@@ -84,13 +84,16 @@ resource "kubernetes_service_v1" "adm_service" {
   }
   spec {
     type = "NodePort"
+    # Local: sin SNAT, el Pod ve la IP real del host (10.10.20.2), necesario para el ipBlock de US-32.
+    # Solo responde el nodo donde está el Pod (k8s-worker1).
+    external_traffic_policy = "Local"
 
     selector = local.admin_labels # app = "admin"
 
     port {
-      port        = 80
-      target_port = 80
-      node_port   = 30002
+      port        = 2222  # ClusterIP del Service (dentro del clúster)
+      target_port = 22    # sshd en el contenedor
+      node_port   = 30002 # en la IP de cada nodo: ssh -p 30002 adminuser@10.10.10.11
     }
 
   }
