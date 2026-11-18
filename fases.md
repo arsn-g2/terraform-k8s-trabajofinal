@@ -59,7 +59,7 @@ Fase 4  🔵 Verificación y entrega ►  B: US-40   A: US-41 🔀   C: US-42   
 | [US-14 · Deployment web con página personalizada](historias/persona-b.md#us-14) | 🖥️ B | 5 | [US-13](historias/persona-b.md#us-13) | 🤝 | ✅ |
 | [US-15 · Service ClusterIP e Ingress](historias/persona-b.md#us-15) | 🖥️ B | 3 | [US-14](historias/persona-b.md#us-14) | ⚠️ | ✅ |
 | [US-16 · Claves SSH y Secrets](historias/persona-c.md#us-16) | 🔐 C | 3 | [US-00](historias/persona-c.md#us-00), [US-01](historias/persona-b.md#us-01) | 🤝 | ✅ |
-| [US-17 · Pod de administración](historias/persona-c.md#us-17) | 🔐 C | 5 | [US-16](historias/persona-c.md#us-16) | 🔀 | ⬜ |
+| [US-17 · Pod de administración](historias/persona-c.md#us-17) | 🔐 C | 5 | [US-16](historias/persona-c.md#us-16) | 🔀 | ✅ |
 | [US-18 · Service NodePort del admin](historias/persona-c.md#us-18) | 🔐 C | 3 | [US-17](historias/persona-c.md#us-17) | | ⬜ |
 
 🚩 **H1: Componentes listos.** La VLAN y la NAD funcionan con un Pod de prueba, los LXC hacen ping, `curl /servers-G2` balancea entre 3 Pods, el SSH al admin por NodePort funciona.

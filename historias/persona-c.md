@@ -25,7 +25,7 @@
 | 0 | [US-00 · Repositorio y convenciones](#us-00) | 2 | ⛔ | ✅ |
 | 0 | [US-03 · Cerrar las dudas pendientes](#us-03) | 1 | ⛔ | ⬜ |
 | 1 | [US-16 · Claves SSH y Secrets](#us-16) | 3 | 🤝 | ✅ |
-| 1 | [US-17 · Pod de administración](#us-17) | 5 | 🔀 | ⬜ |
+| 1 | [US-17 · Pod de administración](#us-17) | 5 | 🔀 | ✅ |
 | 1 | [US-18 · Service NodePort del admin](#us-18) | 3 | | ⬜ |
 | 2 | [US-24 · SSH desde el admin por la VLAN](#us-24) | 5 | 🔀 | ⬜ |
 | 3 | [US-30 · Política de denegación por defecto](#us-30) | 3 | ⛔ | ⬜ |
@@ -90,7 +90,7 @@ En `ssh.tf`, crear con `kubernetes_secret_v1` y `file("${var.ssh_keys_dir}/…")
 
 <a id="us-17"></a>
 ### 🔑 US-17 · Pod de administración · 5 pts · 🔀
-**Completed:** ⬜ · **Depende de:** [US-16](#us-16)
+**Completed:** ✅ · **Depende de:** [US-16](#us-16)
 
 En `admin.tf`, crear el Pod (o un Deployment de 1 réplica) con **`dgsgiros/admin-ssh:latest`** (usuario `adminuser`, GID 1000, con `sudo`), `node_selector = { "kubernetes.io/hostname" = "k8s-worker1" }` (enunciado §5.3) y label `app = admin`.
 
