@@ -97,13 +97,13 @@ En `admin.tf`, crear el Pod (o un Deployment de 1 réplica) con **`dgsgiros/admi
 Permisos, según el ejemplo del enunciado §2.5:
 - `security_context { fs_group = 1000 }` en el Pod, para que los volúmenes de Secret queden con grupo 1000;
 - clave privada con `default_mode`/`mode = "0440"`. **No usar `0600`:** el fichero es de `root`, así que con `0600` `adminuser` no lo puede leer. Con `0440` y `fsGroup` lo lee por grupo, y `ssh` no se queja porque el fichero no es suyo;
-- dos Secrets no se pueden montar en el mismo directorio: montar cada fichero con `sub_path` (`~/.ssh/id_rsa` y `~/.ssh/authorized_keys`) o usar un volumen `projected` que junte ambos.
+- dos Secrets no se pueden montar en el mismo directorio: montar cada fichero con `sub_path` (`~/.ssh/id_ed25519` y `~/.ssh/authorized_keys`) o usar un volumen `projected` que junte ambos.
 
 ⚠️ Si `sshd` rechaza el `authorized_keys` por `StrictModes` (dueño o permisos del directorio), copiar las claves con un initContainer a un `empty_dir` y ajustar dueño y permisos ahí.
 
 🔀 En los Pods web, montar `ssh-web-authorized` como `/home/webuser/.ssh/authorized_keys`. Esto toca `web.tf` de B, así que háganlo en un PR que **revise B**.
 
-🧪 El Pod corre en `k8s-worker1`. Como `adminuser`, `cat ~/.ssh/id_rsa` funciona, `ls -l ~/.ssh` muestra los permisos esperados y `sshd` está activo.
+🧪 El Pod corre en `k8s-worker1`. Como `adminuser`, `cat ~/.ssh/id_ed25519` funciona, `ls -l ~/.ssh` muestra los permisos esperados y `sshd` está activo.
 
 <a id="us-18"></a>
 ### 🔑 US-18 · Service NodePort del admin · 3 pts

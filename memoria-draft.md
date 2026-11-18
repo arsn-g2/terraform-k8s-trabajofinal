@@ -75,7 +75,7 @@ Comprobamos que cada réplica muestra su propio nombre y que un Pod recreado mue
 
 **Claves SSH y Secrets (US-16).** Generamos los dos pares de claves con `ssh-keygen` (script `gen-keys.sh`) y los cargamos con `file()` en tres `kubernetes_secret_v1`: la privada del par 1 para el admin, la pública del par 2 para el acceso host → admin y la pública del par 1 para los web y los LXC.
 
-**Pod de administración (US-17).** Desplegamos el Pod `dgsgiros/admin-ssh:latest` fijado en `k8s-worker1`, con `fsGroup: 1000` y los Secrets montados con modo `0440`.
+**Pod de administración (US-17).** Desplegamos `dgsgiros/admin-ssh:latest` en un Deployment de una réplica fijado en `k8s-worker1`, con `fsGroup: 1000`. Montamos cada clave como un fichero dentro del `~/.ssh` de la imagen, con `sub_path`: la privada del par 1 en `id_ed25519` con modo `0440`, que `adminuser` lee por grupo, y la pública del par 2 en `authorized_keys`. En los Pods web montamos la pública del par 1 en `/home/webuser/.ssh/authorized_keys`. Comprobamos que el admin entra por SSH en un web como `webuser` y que el host entra en el admin con la clave del par 2, pero no con la del par 1.
 
 **Service NodePort (US-18).** Expusimos el SSH del admin con un Service `NodePort` (2222→22) y `externalTrafficPolicy: Local`, para preservar la IP de origen del host. Probamos el acceso desde el host a `10.10.10.11:<nodePort>`.
 

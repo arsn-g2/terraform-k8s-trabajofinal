@@ -1,0 +1,9 @@
+### Claves como adminuser
+uid=1000(adminuser) gid=1000(adminuser) groups=1000(adminuser)
+total 20
+drwx------ 1 adminuser adminuser 4096 Nov 18 06:41 .
+drwxr-x--- 1 adminuser adminuser 4096 Nov  5 08:25 ..
+-r--r--r-- 1 root      adminuser  102 Nov 18 06:41 authorized_keys
+-r--r----- 1 root      adminuser  411 Nov 18 06:41 id_ed25519
+-----BEGIN OPENSSH PRIVATE KEY-----
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPy6dEMT4d0FPIZAQ8tjOX0SAlLEC3pE6Dd2DVXb7W+j par2_host-2026-11-18
