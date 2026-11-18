@@ -1,0 +1,1 @@
+clear; { echo "### Pod admin"; kubectl -n $NS get pod -l app=admin -o wide; } 2>&1 | tee $P

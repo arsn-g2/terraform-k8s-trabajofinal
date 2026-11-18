@@ -1,0 +1,25 @@
+### Pod admin
+NAME                               READY   STATUS    RESTARTS   AGE     IP              NODE          NOMINATED NODE   READINESS GATES
+admin-deployment-695f5c5db-54cg5   1/1     Running   0          2m25s   172.16.194.69   k8s-worker1   <none>           <none>
+### Claves como adminuser
+uid=1000(adminuser) gid=1000(adminuser) groups=1000(adminuser)
+total 20
+drwx------ 1 adminuser adminuser 4096 Nov 18 06:41 .
+drwxr-x--- 1 adminuser adminuser 4096 Nov  5 08:25 ..
+-r--r--r-- 1 root      adminuser  102 Nov 18 06:41 authorized_keys
+-r--r----- 1 root      adminuser  411 Nov 18 06:41 id_ed25519
+-----BEGIN OPENSSH PRIVATE KEY-----
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPy6dEMT4d0FPIZAQ8tjOX0SAlLEC3pE6Dd2DVXb7W+j par2_host-2026-11-18
+### sshd en el admin
+1 sshd: /usr/sbin/sshd -D -e [listener] 0 of 10-100 startups
+### SSH admin -> pod/nginx-deployment-6d7f7b9b89-b6qls (172.16.194.70) como webuser
+Warning: Permanently added '172.16.194.70' (ED25519) to the list of known hosts.
+nginx-deployment-6d7f7b9b89-b6qls
+webuser
+### SSH host -> admin con keys/par2_host (port-forward 2222)
+Warning: Permanently added '[localhost]:2222' (ED25519) to the list of known hosts.
+admin-deployment-695f5c5db-54cg5
+adminuser
+### Prueba negativa: con la clave del par 1 no entra
+Warning: Permanently added '[localhost]:2222' (ED25519) to the list of known hosts.
+adminuser@localhost: Permission denied (publickey).

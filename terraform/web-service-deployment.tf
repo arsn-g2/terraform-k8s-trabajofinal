@@ -36,6 +36,15 @@ resource "kubernetes_deployment_v1" "web_servers" {
             read_only = true
           }
 
+          # Mount the pair 1 public key as webuser's authorized_keys, so the admin can SSH in (US-17)
+          # sub_path mounts a single file and keeps the image's ~/.ssh (webuser, 700)
+          volume_mount {
+            name       = "ssh-web-authorized"
+            mount_path = "/home/webuser/.ssh/authorized_keys"
+            sub_path   = "authorized_keys"
+            read_only  = true
+          }
+
           resources {
             requests = {
               cpu    = "100m"
@@ -57,6 +66,15 @@ resource "kubernetes_deployment_v1" "web_servers" {
         volume {
           name = "html-sidecar-update"
           empty_dir {}
+        }
+
+        // Mount the ssh-web-authorized Secret as a volume: one Secret for the 3 web Pods (US-17, D-004)
+        volume {
+          name = "ssh-web-authorized"
+          secret {
+            secret_name  = kubernetes_secret_v1.ssh_web_authorized.metadata[0].name
+            default_mode = "0444"
+          }
         }
 
         // Sidecar container to generate the HTML file with the pod name

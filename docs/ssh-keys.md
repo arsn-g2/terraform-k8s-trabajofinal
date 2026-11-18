@@ -135,7 +135,6 @@ ssh root@<ip-logs>
 - `security_context { fs_group = 1000 }` en el Pod: los ficheros de los volúmenes de Secret quedan con grupo 1000 (el de `adminuser`).
 - Privada con `default_mode = "0440"`, **no** `0600`. El fichero lo crea Kubernetes como `root`: con `0600` solo lo leería root, y con `0440` + `fsGroup` `adminuser` lo lee por grupo. `ssh` no se queja de los permisos porque el fichero no es suyo.
 - Dos Secrets no se pueden montar en el mismo directorio como volúmenes enteros (el segundo tapa al primero). Usar `sub_path` para cada fichero (`~/.ssh/id_ed25519` y `~/.ssh/authorized_keys`) o un volumen `projected` que junte los dos.
-- ⚠️ La historia US-17 dice `~/.ssh/id_rsa`: con claves ed25519 el nombre correcto es **`id_ed25519`**. `ssh` busca los dos por defecto, pero llamarla `id_rsa` confunde.
 
 ### 5.4 Montaje en los Pods web (US-17, toca `web.tf` de B)
 

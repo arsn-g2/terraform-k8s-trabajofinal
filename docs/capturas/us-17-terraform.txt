@@ -1,0 +1,1183 @@
+Warning: Permanently added 'terraform' (ED25519) to the list of known hosts.
+data.kubernetes_resource.metallb_pool: Reading...
+data.kubernetes_service_v1.ingress_controller: Reading...
+data.kubernetes_service_v1.ingress_controller: Read complete after 0s [id=ingress-nginx/ingress-nginx-controller]
+data.kubernetes_resource.metallb_pool: Read complete after 0s
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # kubernetes_config_map_v1.web_config will be created
+  + resource "kubernetes_config_map_v1" "web_config" {
+      + data = {
+          + "index.html" = <<-EOT
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <title>CNVR/ARSN G2</title>
+                </head>
+                <body>
+                  <h1>Hello from Kubernetes!</h1>
+                  <p>Web server of CNVR/ARSN group 2</p>
+                  <p>Served by Pod: <b>__POD_NAME__</b></p>
+                </body>
+                </html>
+            EOT
+        }
+      + id   = (known after apply)
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "nginx-web-config"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+    }
+
+  # kubernetes_deployment_v1.admin_server will be created
+  + resource "kubernetes_deployment_v1" "admin_server" {
+      + id               = (known after apply)
+      + wait_for_rollout = true
+
+      + metadata {
+          + generation       = (known after apply)
+          + labels           = {
+              + "app" = "admin"
+            }
+          + name             = "admin-deployment"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+
+      + spec {
+          + min_ready_seconds         = 0
+          + paused                    = false
+          + progress_deadline_seconds = 600
+          + replicas                  = "1"
+          + revision_history_limit    = 10
+
+          + selector {
+              + match_labels = {
+                  + "app" = "admin"
+                }
+            }
+
+          + strategy (known after apply)
+
+          + template {
+              + metadata {
+                  + generation       = (known after apply)
+                  + labels           = {
+                      + "app" = "admin"
+                    }
+                  + name             = (known after apply)
+                  + resource_version = (known after apply)
+                  + uid              = (known after apply)
+                }
+              + spec {
+                  + automount_service_account_token  = true
+                  + dns_policy                       = "ClusterFirst"
+                  + enable_service_links             = true
+                  + host_ipc                         = false
+                  + host_network                     = false
+                  + host_pid                         = false
+                  + hostname                         = (known after apply)
+                  + node_name                        = (known after apply)
+                  + node_selector                    = {
+                      + "kubernetes.io/hostname" = "k8s-worker1"
+                    }
+                  + restart_policy                   = "Always"
+                  + scheduler_name                   = (known after apply)
+                  + service_account_name             = (known after apply)
+                  + share_process_namespace          = false
+                  + termination_grace_period_seconds = 30
+
+                  + container {
+                      + image                      = "dgsgiros/admin-ssh:latest"
+                      + image_pull_policy          = (known after apply)
+                      + name                       = "admin-server"
+                      + stdin                      = false
+                      + stdin_once                 = false
+                      + termination_message_path   = "/dev/termination-log"
+                      + termination_message_policy = (known after apply)
+                      + tty                        = false
+
+                      + port {
+                          + container_port = 22
+                          + protocol       = "TCP"
+                        }
+
+                      + resources (known after apply)
+
+                      + volume_mount {
+                          + mount_path        = "/home/adminuser/.ssh/id_ed25519"
+                          + mount_propagation = "None"
+                          + name              = "ssh-admin-private"
+                          + read_only         = true
+                          + sub_path          = "id_ed25519"
+                        }
+                      + volume_mount {
+                          + mount_path        = "/home/adminuser/.ssh/authorized_keys"
+                          + mount_propagation = "None"
+                          + name              = "ssh-admin-authorized"
+                          + read_only         = true
+                          + sub_path          = "authorized_keys"
+                        }
+                    }
+
+                  + image_pull_secrets (known after apply)
+
+                  + readiness_gate (known after apply)
+
+                  + security_context {
+                      + fs_group = "1000"
+                    }
+
+                  + volume {
+                      + name = "ssh-admin-private"
+
+                      + secret {
+                          + default_mode = "0440"
+                          + secret_name  = "ssh-admin-private"
+
+                          + items {
+                              + key  = "id_ed25519"
+                              + mode = "0440"
+                              + path = "id_ed25519"
+                            }
+                        }
+                    }
+                  + volume {
+                      + name = "ssh-admin-authorized"
+
+                      + secret {
+                          + default_mode = "0444"
+                          + secret_name  = "ssh-admin-authorized"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+  # kubernetes_deployment_v1.web_servers will be created
+  + resource "kubernetes_deployment_v1" "web_servers" {
+      + id               = (known after apply)
+      + wait_for_rollout = true
+
+      + metadata {
+          + generation       = (known after apply)
+          + labels           = {
+              + "app" = "web"
+            }
+          + name             = "nginx-deployment"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+
+      + spec {
+          + min_ready_seconds         = 0
+          + paused                    = false
+          + progress_deadline_seconds = 600
+          + replicas                  = "3"
+          + revision_history_limit    = 10
+
+          + selector {
+              + match_labels = {
+                  + "app" = "web"
+                }
+            }
+
+          + strategy (known after apply)
+
+          + template {
+              + metadata {
+                  + generation       = (known after apply)
+                  + labels           = {
+                      + "app" = "web"
+                    }
+                  + name             = (known after apply)
+                  + resource_version = (known after apply)
+                  + uid              = (known after apply)
+                }
+              + spec {
+                  + automount_service_account_token  = true
+                  + dns_policy                       = "ClusterFirst"
+                  + enable_service_links             = true
+                  + host_ipc                         = false
+                  + host_network                     = false
+                  + host_pid                         = false
+                  + hostname                         = (known after apply)
+                  + node_name                        = (known after apply)
+                  + restart_policy                   = "Always"
+                  + scheduler_name                   = (known after apply)
+                  + service_account_name             = (known after apply)
+                  + share_process_namespace          = false
+                  + termination_grace_period_seconds = 30
+
+                  + container {
+                      + image                      = "dgsgiros/nginx-ssh:latest"
+                      + image_pull_policy          = (known after apply)
+                      + name                       = "nginx-server"
+                      + stdin                      = false
+                      + stdin_once                 = false
+                      + termination_message_path   = "/dev/termination-log"
+                      + termination_message_policy = (known after apply)
+                      + tty                        = false
+
+                      + port {
+                          + container_port = 80
+                          + protocol       = "TCP"
+                        }
+
+                      + resources {
+                          + limits   = (known after apply)
+                          + requests = {
+                              + "cpu"    = "100m"
+                              + "memory" = "128Mi"
+                            }
+                        }
+
+                      + volume_mount {
+                          + mount_path        = "/usr/share/nginx/html"
+                          + mount_propagation = "None"
+                          + name              = "html-sidecar-update"
+                          + read_only         = true
+                        }
+                      + volume_mount {
+                          + mount_path        = "/home/webuser/.ssh/authorized_keys"
+                          + mount_propagation = "None"
+                          + name              = "ssh-web-authorized"
+                          + read_only         = true
+                          + sub_path          = "authorized_keys"
+                        }
+                    }
+                  + container {
+                      + command                    = [
+                          + "sh",
+                          + "-c",
+                          + "sed \"s/__POD_NAME__/$POD_NAME/g\" /template/index.html > /html/index.html && sleep infinity",
+                        ]
+                      + image                      = "dgsgiros/nginx-ssh:latest"
+                      + image_pull_policy          = (known after apply)
+                      + name                       = "page-updater-sidecar"
+                      + stdin                      = false
+                      + stdin_once                 = false
+                      + termination_message_path   = "/dev/termination-log"
+                      + termination_message_policy = (known after apply)
+                      + tty                        = false
+
+                      + env {
+                          + name = "POD_NAME"
+
+                          + value_from {
+                              + field_ref {
+                                  + api_version = "v1"
+                                  + field_path  = "metadata.name"
+                                }
+                            }
+                        }
+
+                      + resources (known after apply)
+
+                      + volume_mount {
+                          + mount_path        = "/template"
+                          + mount_propagation = "None"
+                          + name              = "nginx-web-template"
+                          + read_only         = true
+                        }
+                      + volume_mount {
+                          + mount_path        = "/html"
+                          + mount_propagation = "None"
+                          + name              = "html-sidecar-update"
+                          + read_only         = false
+                        }
+                    }
+
+                  + image_pull_secrets (known after apply)
+
+                  + readiness_gate (known after apply)
+
+                  + volume {
+                      + name = "nginx-web-template"
+
+                      + config_map {
+                          + default_mode = "0644"
+                          + name         = "nginx-web-config"
+                        }
+                    }
+                  + volume {
+                      + name = "html-sidecar-update"
+
+                      + empty_dir {}
+                    }
+                  + volume {
+                      + name = "ssh-web-authorized"
+
+                      + secret {
+                          + default_mode = "0444"
+                          + secret_name  = "ssh-web-authorized"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+  # kubernetes_ingress_v1.web_ingress will be created
+  + resource "kubernetes_ingress_v1" "web_ingress" {
+      + id     = (known after apply)
+      + status = (known after apply)
+
+      + metadata {
+          + annotations      = {
+              + "nginx.ingress.kubernetes.io/rewrite-target" = "/"
+            }
+          + generation       = (known after apply)
+          + name             = "g2-ingress"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+
+      + spec {
+          + ingress_class_name = "nginx"
+
+          + rule {
+              + http {
+                  + path {
+                      + path      = "/servers-G2"
+                      + path_type = "Prefix"
+
+                      + backend {
+                          + service {
+                              + name = "nginx-service"
+
+                              + port {
+                                  + number = 8080
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+  # kubernetes_namespace_v1.namespace will be created
+  + resource "kubernetes_namespace_v1" "namespace" {
+      + id                               = (known after apply)
+      + wait_for_default_service_account = false
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+    }
+
+  # kubernetes_secret_v1.ssh_admin_authorized will be created
+  + resource "kubernetes_secret_v1" "ssh_admin_authorized" {
+      + data                           = (sensitive value)
+      + id                             = (known after apply)
+      + type                           = "Opaque"
+      + wait_for_service_account_token = true
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "ssh-admin-authorized"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+    }
+
+  # kubernetes_secret_v1.ssh_admin_private will be created
+  + resource "kubernetes_secret_v1" "ssh_admin_private" {
+      + data                           = (sensitive value)
+      + id                             = (known after apply)
+      + type                           = "Opaque"
+      + wait_for_service_account_token = true
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "ssh-admin-private"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+    }
+
+  # kubernetes_secret_v1.ssh_web_authorized will be created
+  + resource "kubernetes_secret_v1" "ssh_web_authorized" {
+      + data                           = (sensitive value)
+      + id                             = (known after apply)
+      + type                           = "Opaque"
+      + wait_for_service_account_token = true
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "ssh-web-authorized"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+    }
+
+  # kubernetes_service_v1.adm_service will be created
+  + resource "kubernetes_service_v1" "adm_service" {
+      + id                     = (known after apply)
+      + status                 = (known after apply)
+      + wait_for_load_balancer = true
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "admin-service"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+
+      + spec {
+          + allocate_load_balancer_node_ports = true
+          + cluster_ip                        = (known after apply)
+          + cluster_ips                       = (known after apply)
+          + external_traffic_policy           = (known after apply)
+          + health_check_node_port            = (known after apply)
+          + internal_traffic_policy           = (known after apply)
+          + ip_families                       = (known after apply)
+          + ip_family_policy                  = (known after apply)
+          + publish_not_ready_addresses       = false
+          + selector                          = {
+              + "app" = "admin"
+            }
+          + session_affinity                  = "None"
+          + type                              = "NodePort"
+
+          + port {
+              + node_port   = 30002
+              + port        = 80
+              + protocol    = "TCP"
+              + target_port = "80"
+            }
+
+          + session_affinity_config (known after apply)
+        }
+    }
+
+  # kubernetes_service_v1.web_service will be created
+  + resource "kubernetes_service_v1" "web_service" {
+      + id                     = (known after apply)
+      + status                 = (known after apply)
+      + wait_for_load_balancer = true
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "nginx-service"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+
+      + spec {
+          + allocate_load_balancer_node_ports = true
+          + cluster_ip                        = (known after apply)
+          + cluster_ips                       = (known after apply)
+          + external_traffic_policy           = (known after apply)
+          + health_check_node_port            = (known after apply)
+          + internal_traffic_policy           = (known after apply)
+          + ip_families                       = (known after apply)
+          + ip_family_policy                  = (known after apply)
+          + publish_not_ready_addresses       = false
+          + selector                          = {
+              + "app" = "web"
+            }
+          + session_affinity                  = "None"
+          + type                              = "ClusterIP"
+
+          + port {
+              + node_port   = (known after apply)
+              + port        = 8080
+              + protocol    = "TCP"
+              + target_port = "80"
+            }
+
+          + session_affinity_config (known after apply)
+        }
+    }
+
+Plan: 10 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + admin_deployment_name     = "admin-deployment"
+  + admin_deployment_replicas = "1"
+  + admin_labels              = {
+      + app = "admin"
+    }
+  + admin_service_name        = "admin-service"
+  + admin_service_node_port   = 30002
+  + admin_service_type        = "NodePort"
+  + group_number              = 2
+  + image_admin               = "dgsgiros/admin-ssh:latest"
+  + image_web                 = "dgsgiros/nginx-ssh:latest"
+  + ingress_class             = "nginx"
+  + ingress_http_node_port    = 30097
+  + ingress_lb_ip             = "10.10.10.20"
+  + ingress_name              = "g2-ingress"
+  + ingress_path              = "/servers-G2"
+  + metallb_pool_addresses    = [
+      + "10.10.10.20-10.10.10.30",
+    ]
+  + namespace                 = "g2-workshop"
+  + ssh_secret_names          = {
+      + admin_authorized = "ssh-admin-authorized"
+      + admin_private    = "ssh-admin-private"
+      + web_authorized   = "ssh-web-authorized"
+    }
+  + web_config_map_name       = "nginx-web-config"
+  + web_deployment_name       = "nginx-deployment"
+  + web_deployment_replicas   = "3"
+  + web_labels                = {
+      + app = "web"
+    }
+  + web_num_replicas          = 3
+  + web_service_cluster_ip    = (known after apply)
+  + web_service_name          = "nginx-service"
+  + web_service_type          = "ClusterIP"
+  + web_url                   = "http://10.10.10.20/servers-G2"
+
+─────────────────────────────────────────────────────────────────────────────
+
+Note: You didn't use the -out option to save this plan, so Terraform can't
+guarantee to take exactly these actions if you run "terraform apply" now.
+Warning: Permanently added 'terraform' (ED25519) to the list of known hosts.
+data.kubernetes_resource.metallb_pool: Reading...
+data.kubernetes_service_v1.ingress_controller: Reading...
+data.kubernetes_service_v1.ingress_controller: Read complete after 1s [id=ingress-nginx/ingress-nginx-controller]
+data.kubernetes_resource.metallb_pool: Read complete after 1s
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # kubernetes_config_map_v1.web_config will be created
+  + resource "kubernetes_config_map_v1" "web_config" {
+      + data = {
+          + "index.html" = <<-EOT
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <title>CNVR/ARSN G2</title>
+                </head>
+                <body>
+                  <h1>Hello from Kubernetes!</h1>
+                  <p>Web server of CNVR/ARSN group 2</p>
+                  <p>Served by Pod: <b>__POD_NAME__</b></p>
+                </body>
+                </html>
+            EOT
+        }
+      + id   = (known after apply)
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "nginx-web-config"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+    }
+
+  # kubernetes_deployment_v1.admin_server will be created
+  + resource "kubernetes_deployment_v1" "admin_server" {
+      + id               = (known after apply)
+      + wait_for_rollout = true
+
+      + metadata {
+          + generation       = (known after apply)
+          + labels           = {
+              + "app" = "admin"
+            }
+          + name             = "admin-deployment"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+
+      + spec {
+          + min_ready_seconds         = 0
+          + paused                    = false
+          + progress_deadline_seconds = 600
+          + replicas                  = "1"
+          + revision_history_limit    = 10
+
+          + selector {
+              + match_labels = {
+                  + "app" = "admin"
+                }
+            }
+
+          + strategy (known after apply)
+
+          + template {
+              + metadata {
+                  + generation       = (known after apply)
+                  + labels           = {
+                      + "app" = "admin"
+                    }
+                  + name             = (known after apply)
+                  + resource_version = (known after apply)
+                  + uid              = (known after apply)
+                }
+              + spec {
+                  + automount_service_account_token  = true
+                  + dns_policy                       = "ClusterFirst"
+                  + enable_service_links             = true
+                  + host_ipc                         = false
+                  + host_network                     = false
+                  + host_pid                         = false
+                  + hostname                         = (known after apply)
+                  + node_name                        = (known after apply)
+                  + node_selector                    = {
+                      + "kubernetes.io/hostname" = "k8s-worker1"
+                    }
+                  + restart_policy                   = "Always"
+                  + scheduler_name                   = (known after apply)
+                  + service_account_name             = (known after apply)
+                  + share_process_namespace          = false
+                  + termination_grace_period_seconds = 30
+
+                  + container {
+                      + image                      = "dgsgiros/admin-ssh:latest"
+                      + image_pull_policy          = (known after apply)
+                      + name                       = "admin-server"
+                      + stdin                      = false
+                      + stdin_once                 = false
+                      + termination_message_path   = "/dev/termination-log"
+                      + termination_message_policy = (known after apply)
+                      + tty                        = false
+
+                      + port {
+                          + container_port = 22
+                          + protocol       = "TCP"
+                        }
+
+                      + resources (known after apply)
+
+                      + volume_mount {
+                          + mount_path        = "/home/adminuser/.ssh/id_ed25519"
+                          + mount_propagation = "None"
+                          + name              = "ssh-admin-private"
+                          + read_only         = true
+                          + sub_path          = "id_ed25519"
+                        }
+                      + volume_mount {
+                          + mount_path        = "/home/adminuser/.ssh/authorized_keys"
+                          + mount_propagation = "None"
+                          + name              = "ssh-admin-authorized"
+                          + read_only         = true
+                          + sub_path          = "authorized_keys"
+                        }
+                    }
+
+                  + image_pull_secrets (known after apply)
+
+                  + readiness_gate (known after apply)
+
+                  + security_context {
+                      + fs_group = "1000"
+                    }
+
+                  + volume {
+                      + name = "ssh-admin-private"
+
+                      + secret {
+                          + default_mode = "0440"
+                          + secret_name  = "ssh-admin-private"
+
+                          + items {
+                              + key  = "id_ed25519"
+                              + mode = "0440"
+                              + path = "id_ed25519"
+                            }
+                        }
+                    }
+                  + volume {
+                      + name = "ssh-admin-authorized"
+
+                      + secret {
+                          + default_mode = "0444"
+                          + secret_name  = "ssh-admin-authorized"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+  # kubernetes_deployment_v1.web_servers will be created
+  + resource "kubernetes_deployment_v1" "web_servers" {
+      + id               = (known after apply)
+      + wait_for_rollout = true
+
+      + metadata {
+          + generation       = (known after apply)
+          + labels           = {
+              + "app" = "web"
+            }
+          + name             = "nginx-deployment"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+
+      + spec {
+          + min_ready_seconds         = 0
+          + paused                    = false
+          + progress_deadline_seconds = 600
+          + replicas                  = "3"
+          + revision_history_limit    = 10
+
+          + selector {
+              + match_labels = {
+                  + "app" = "web"
+                }
+            }
+
+          + strategy (known after apply)
+
+          + template {
+              + metadata {
+                  + generation       = (known after apply)
+                  + labels           = {
+                      + "app" = "web"
+                    }
+                  + name             = (known after apply)
+                  + resource_version = (known after apply)
+                  + uid              = (known after apply)
+                }
+              + spec {
+                  + automount_service_account_token  = true
+                  + dns_policy                       = "ClusterFirst"
+                  + enable_service_links             = true
+                  + host_ipc                         = false
+                  + host_network                     = false
+                  + host_pid                         = false
+                  + hostname                         = (known after apply)
+                  + node_name                        = (known after apply)
+                  + restart_policy                   = "Always"
+                  + scheduler_name                   = (known after apply)
+                  + service_account_name             = (known after apply)
+                  + share_process_namespace          = false
+                  + termination_grace_period_seconds = 30
+
+                  + container {
+                      + image                      = "dgsgiros/nginx-ssh:latest"
+                      + image_pull_policy          = (known after apply)
+                      + name                       = "nginx-server"
+                      + stdin                      = false
+                      + stdin_once                 = false
+                      + termination_message_path   = "/dev/termination-log"
+                      + termination_message_policy = (known after apply)
+                      + tty                        = false
+
+                      + port {
+                          + container_port = 80
+                          + protocol       = "TCP"
+                        }
+
+                      + resources {
+                          + limits   = (known after apply)
+                          + requests = {
+                              + "cpu"    = "100m"
+                              + "memory" = "128Mi"
+                            }
+                        }
+
+                      + volume_mount {
+                          + mount_path        = "/usr/share/nginx/html"
+                          + mount_propagation = "None"
+                          + name              = "html-sidecar-update"
+                          + read_only         = true
+                        }
+                      + volume_mount {
+                          + mount_path        = "/home/webuser/.ssh/authorized_keys"
+                          + mount_propagation = "None"
+                          + name              = "ssh-web-authorized"
+                          + read_only         = true
+                          + sub_path          = "authorized_keys"
+                        }
+                    }
+                  + container {
+                      + command                    = [
+                          + "sh",
+                          + "-c",
+                          + "sed \"s/__POD_NAME__/$POD_NAME/g\" /template/index.html > /html/index.html && sleep infinity",
+                        ]
+                      + image                      = "dgsgiros/nginx-ssh:latest"
+                      + image_pull_policy          = (known after apply)
+                      + name                       = "page-updater-sidecar"
+                      + stdin                      = false
+                      + stdin_once                 = false
+                      + termination_message_path   = "/dev/termination-log"
+                      + termination_message_policy = (known after apply)
+                      + tty                        = false
+
+                      + env {
+                          + name = "POD_NAME"
+
+                          + value_from {
+                              + field_ref {
+                                  + api_version = "v1"
+                                  + field_path  = "metadata.name"
+                                }
+                            }
+                        }
+
+                      + resources (known after apply)
+
+                      + volume_mount {
+                          + mount_path        = "/template"
+                          + mount_propagation = "None"
+                          + name              = "nginx-web-template"
+                          + read_only         = true
+                        }
+                      + volume_mount {
+                          + mount_path        = "/html"
+                          + mount_propagation = "None"
+                          + name              = "html-sidecar-update"
+                          + read_only         = false
+                        }
+                    }
+
+                  + image_pull_secrets (known after apply)
+
+                  + readiness_gate (known after apply)
+
+                  + volume {
+                      + name = "nginx-web-template"
+
+                      + config_map {
+                          + default_mode = "0644"
+                          + name         = "nginx-web-config"
+                        }
+                    }
+                  + volume {
+                      + name = "html-sidecar-update"
+
+                      + empty_dir {}
+                    }
+                  + volume {
+                      + name = "ssh-web-authorized"
+
+                      + secret {
+                          + default_mode = "0444"
+                          + secret_name  = "ssh-web-authorized"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+  # kubernetes_ingress_v1.web_ingress will be created
+  + resource "kubernetes_ingress_v1" "web_ingress" {
+      + id     = (known after apply)
+      + status = (known after apply)
+
+      + metadata {
+          + annotations      = {
+              + "nginx.ingress.kubernetes.io/rewrite-target" = "/"
+            }
+          + generation       = (known after apply)
+          + name             = "g2-ingress"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+
+      + spec {
+          + ingress_class_name = "nginx"
+
+          + rule {
+              + http {
+                  + path {
+                      + path      = "/servers-G2"
+                      + path_type = "Prefix"
+
+                      + backend {
+                          + service {
+                              + name = "nginx-service"
+
+                              + port {
+                                  + number = 8080
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+  # kubernetes_namespace_v1.namespace will be created
+  + resource "kubernetes_namespace_v1" "namespace" {
+      + id                               = (known after apply)
+      + wait_for_default_service_account = false
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+    }
+
+  # kubernetes_secret_v1.ssh_admin_authorized will be created
+  + resource "kubernetes_secret_v1" "ssh_admin_authorized" {
+      + data                           = (sensitive value)
+      + id                             = (known after apply)
+      + type                           = "Opaque"
+      + wait_for_service_account_token = true
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "ssh-admin-authorized"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+    }
+
+  # kubernetes_secret_v1.ssh_admin_private will be created
+  + resource "kubernetes_secret_v1" "ssh_admin_private" {
+      + data                           = (sensitive value)
+      + id                             = (known after apply)
+      + type                           = "Opaque"
+      + wait_for_service_account_token = true
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "ssh-admin-private"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+    }
+
+  # kubernetes_secret_v1.ssh_web_authorized will be created
+  + resource "kubernetes_secret_v1" "ssh_web_authorized" {
+      + data                           = (sensitive value)
+      + id                             = (known after apply)
+      + type                           = "Opaque"
+      + wait_for_service_account_token = true
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "ssh-web-authorized"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+    }
+
+  # kubernetes_service_v1.adm_service will be created
+  + resource "kubernetes_service_v1" "adm_service" {
+      + id                     = (known after apply)
+      + status                 = (known after apply)
+      + wait_for_load_balancer = true
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "admin-service"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+
+      + spec {
+          + allocate_load_balancer_node_ports = true
+          + cluster_ip                        = (known after apply)
+          + cluster_ips                       = (known after apply)
+          + external_traffic_policy           = (known after apply)
+          + health_check_node_port            = (known after apply)
+          + internal_traffic_policy           = (known after apply)
+          + ip_families                       = (known after apply)
+          + ip_family_policy                  = (known after apply)
+          + publish_not_ready_addresses       = false
+          + selector                          = {
+              + "app" = "admin"
+            }
+          + session_affinity                  = "None"
+          + type                              = "NodePort"
+
+          + port {
+              + node_port   = 30002
+              + port        = 80
+              + protocol    = "TCP"
+              + target_port = "80"
+            }
+
+          + session_affinity_config (known after apply)
+        }
+    }
+
+  # kubernetes_service_v1.web_service will be created
+  + resource "kubernetes_service_v1" "web_service" {
+      + id                     = (known after apply)
+      + status                 = (known after apply)
+      + wait_for_load_balancer = true
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "nginx-service"
+          + namespace        = "g2-workshop"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+
+      + spec {
+          + allocate_load_balancer_node_ports = true
+          + cluster_ip                        = (known after apply)
+          + cluster_ips                       = (known after apply)
+          + external_traffic_policy           = (known after apply)
+          + health_check_node_port            = (known after apply)
+          + internal_traffic_policy           = (known after apply)
+          + ip_families                       = (known after apply)
+          + ip_family_policy                  = (known after apply)
+          + publish_not_ready_addresses       = false
+          + selector                          = {
+              + "app" = "web"
+            }
+          + session_affinity                  = "None"
+          + type                              = "ClusterIP"
+
+          + port {
+              + node_port   = (known after apply)
+              + port        = 8080
+              + protocol    = "TCP"
+              + target_port = "80"
+            }
+
+          + session_affinity_config (known after apply)
+        }
+    }
+
+Plan: 10 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + admin_deployment_name     = "admin-deployment"
+  + admin_deployment_replicas = "1"
+  + admin_labels              = {
+      + app = "admin"
+    }
+  + admin_service_name        = "admin-service"
+  + admin_service_node_port   = 30002
+  + admin_service_type        = "NodePort"
+  + group_number              = 2
+  + image_admin               = "dgsgiros/admin-ssh:latest"
+  + image_web                 = "dgsgiros/nginx-ssh:latest"
+  + ingress_class             = "nginx"
+  + ingress_http_node_port    = 30097
+  + ingress_lb_ip             = "10.10.10.20"
+  + ingress_name              = "g2-ingress"
+  + ingress_path              = "/servers-G2"
+  + metallb_pool_addresses    = [
+      + "10.10.10.20-10.10.10.30",
+    ]
+  + namespace                 = "g2-workshop"
+  + ssh_secret_names          = {
+      + admin_authorized = "ssh-admin-authorized"
+      + admin_private    = "ssh-admin-private"
+      + web_authorized   = "ssh-web-authorized"
+    }
+  + web_config_map_name       = "nginx-web-config"
+  + web_deployment_name       = "nginx-deployment"
+  + web_deployment_replicas   = "3"
+  + web_labels                = {
+      + app = "web"
+    }
+  + web_num_replicas          = 3
+  + web_service_cluster_ip    = (known after apply)
+  + web_service_name          = "nginx-service"
+  + web_service_type          = "ClusterIP"
+  + web_url                   = "http://10.10.10.20/servers-G2"
+kubernetes_namespace_v1.namespace: Creating...
+kubernetes_namespace_v1.namespace: Creation complete after 0s [id=g2-workshop]
+kubernetes_secret_v1.ssh_admin_authorized: Creating...
+kubernetes_secret_v1.ssh_admin_private: Creating...
+kubernetes_service_v1.web_service: Creating...
+kubernetes_config_map_v1.web_config: Creating...
+kubernetes_service_v1.adm_service: Creating...
+kubernetes_secret_v1.ssh_web_authorized: Creating...
+kubernetes_secret_v1.ssh_admin_private: Creation complete after 1s [id=g2-workshop/ssh-admin-private]
+kubernetes_config_map_v1.web_config: Creation complete after 1s [id=g2-workshop/nginx-web-config]
+kubernetes_secret_v1.ssh_admin_authorized: Creation complete after 1s [id=g2-workshop/ssh-admin-authorized]
+kubernetes_secret_v1.ssh_web_authorized: Creation complete after 1s [id=g2-workshop/ssh-web-authorized]
+kubernetes_service_v1.web_service: Creation complete after 1s [id=g2-workshop/nginx-service]
+kubernetes_ingress_v1.web_ingress: Creating...
+kubernetes_service_v1.adm_service: Creation complete after 1s [id=g2-workshop/admin-service]
+kubernetes_deployment_v1.admin_server: Creating...
+kubernetes_deployment_v1.web_servers: Creating...
+kubernetes_ingress_v1.web_ingress: Creation complete after 1s [id=g2-workshop/g2-ingress]
+kubernetes_deployment_v1.admin_server: Still creating... [00m10s elapsed]
+kubernetes_deployment_v1.web_servers: Still creating... [00m10s elapsed]
+kubernetes_deployment_v1.admin_server: Still creating... [00m20s elapsed]
+kubernetes_deployment_v1.web_servers: Still creating... [00m20s elapsed]
+kubernetes_deployment_v1.admin_server: Still creating... [00m30s elapsed]
+kubernetes_deployment_v1.web_servers: Still creating... [00m30s elapsed]
+kubernetes_deployment_v1.admin_server: Creation complete after 37s [id=g2-workshop/admin-deployment]
+kubernetes_deployment_v1.web_servers: Still creating... [00m40s elapsed]
+kubernetes_deployment_v1.web_servers: Still creating... [00m50s elapsed]
+kubernetes_deployment_v1.web_servers: Still creating... [01m00s elapsed]
+kubernetes_deployment_v1.web_servers: Creation complete after 1m8s [id=g2-workshop/nginx-deployment]
+
+Apply complete! Resources: 10 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+admin_deployment_name = "admin-deployment"
+admin_deployment_replicas = "1"
+admin_labels = {
+  "app" = "admin"
+}
+admin_service_name = "admin-service"
+admin_service_node_port = 30002
+admin_service_type = "NodePort"
+group_number = 2
+image_admin = "dgsgiros/admin-ssh:latest"
+image_web = "dgsgiros/nginx-ssh:latest"
+ingress_class = "nginx"
+ingress_http_node_port = 30097
+ingress_lb_ip = "10.10.10.20"
+ingress_name = "g2-ingress"
+ingress_path = "/servers-G2"
+metallb_pool_addresses = tolist([
+  "10.10.10.20-10.10.10.30",
+])
+namespace = "g2-workshop"
+ssh_secret_names = {
+  "admin_authorized" = "ssh-admin-authorized"
+  "admin_private" = "ssh-admin-private"
+  "web_authorized" = "ssh-web-authorized"
+}
+web_config_map_name = "nginx-web-config"
+web_deployment_name = "nginx-deployment"
+web_deployment_replicas = "3"
+web_labels = {
+  "app" = "web"
+}
+web_num_replicas = 3
+web_service_cluster_ip = "10.99.56.169"
+web_service_name = "nginx-service"
+web_service_type = "ClusterIP"
+web_url = "http://10.10.10.20/servers-G2"
