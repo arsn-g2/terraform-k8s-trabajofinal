@@ -167,4 +167,12 @@ output "vlan_admin_ip_cidr" {
 output "vlan_web_range" {
   description = "Rango de IPs de los Pods web en la VLAN (whereabouts)"
   value       = "${var.vlan_web_range_start}-${var.vlan_web_range_end}"
+# SSH (US-16)
+output "ssh_secret_names" {
+  description = "Secrets con las claves SSH (D-004): los monta US-17 en el admin y en los web"
+  value = {
+    admin_private    = kubernetes_secret_v1.ssh_admin_private.metadata[0].name
+    admin_authorized = kubernetes_secret_v1.ssh_admin_authorized.metadata[0].name
+    web_authorized   = kubernetes_secret_v1.ssh_web_authorized.metadata[0].name
+  }
 }

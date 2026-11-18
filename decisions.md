@@ -41,15 +41,15 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 - **Why:** the Pod name never changes during the Pod's life, so generating the page once at start-up is enough. It is simpler, uses no long-running extra container, and the page exists before nginx starts.
 
 ### D-004 SSH keys generated on the host, loaded into Secrets with `file()`
-- **Status:** Proposed
+- **Status:** Accepted (2026-11-17, when US-16 was completed)
 - **Context:** PDF §2.5 recommends generating keys on the host and asks us to manage the Secrets with Terraform instead of kubectl.
 - **Options:** `ssh-keygen` + `kubernetes_secret_v1` with `file()`, or `tls_private_key` inside Terraform.
-- **Decision:** two independent key pairs generated with `ssh-keygen` by `scripts/gen-keys.sh` (to be written; `scripts/create-keypairs.sh` is the P1.4 OpenStack script and does not apply) into the git-ignored `keys/`, loaded with `file()` into three `kubernetes_secret_v1`:
-  - `ssh-admin-private`: pair 1 private key → admin Pod;
+- **Decision:** two independent **ed25519** key pairs (`par1_admin`, `par2_host`) generated with `ssh-keygen -t ed25519 -N ""` by `scripts/gen-keys.sh` (`scripts/create-keypairs.sh` is the P1.4 OpenStack script and does not apply) into the git-ignored `keys/`, regenerated every day because the environment is rebuilt, and loaded with `file()` into three `kubernetes_secret_v1`:
+  - `ssh-admin-private`: pair 1 private key → admin Pod (file `id_ed25519`);
   - `ssh-admin-authorized`: pair 2 public key → admin `authorized_keys`;
-  - `ssh-web-authorized`: pair 1 public key → `authorized_keys` of all web Pods (one Secret). The same public key goes to the LXC via `filetree`.
+  - `ssh-web-authorized`: pair 1 public key → `authorized_keys` of all web Pods (one Secret). The same public key goes to the LXC via `filetree`: `gen-keys.sh` copies it to the git-ignored `vnx/filetree/ssh/authorized_keys`.
   Pair 2's private key stays on the host. The admin Pod uses `fsGroup: 1000` and mode `0440`, as in the PDF example.
-- **Why:** it follows the PDF (5 Nov version, §2.5), and the host keeps the private key it needs for host → admin.
+- **Why:** it follows the PDF (5 Nov version, §2.5), and the host keeps the private key it needs for host → admin. ed25519 gives short one-line keys and is the modern OpenSSH choice (support in the `nginx-ssh`/`admin-ssh` images and the LXC is checked in US-18/US-24).
 - **Consequences:** Secret data still ends up in the tfstate, so the state must stay out of git.
 
 ### D-005 VLAN IPAM

@@ -26,6 +26,8 @@ id_ed25519*
 *.pem
 *.key
 .env
+# Clave pública del par 1 para los LXC: la genera gen-keys.sh cada día (US-16)
+vnx/filetree/ssh/
 
 # Sistema / editor
 *.swp

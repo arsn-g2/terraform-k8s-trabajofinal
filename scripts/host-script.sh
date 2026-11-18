@@ -13,5 +13,10 @@ sudo vnx -f k8s_lab-calico.xml -x config_metallb
 cd /mnt/tmp/k8s_lab-calico-v02/shared/
 git clone https://github.com/arsn-g2/terraform-k8s-trabajofinal.git
 
+# claves SSH del día (US-16), sin sudo
+cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal/
+chmod +x scripts/gen-keys.sh
+./scripts/gen-keys.sh
+
 cd /mnt/tmp/k8s_lab-calico-v02/
 code .

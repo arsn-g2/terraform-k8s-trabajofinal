@@ -4,6 +4,12 @@ variable "namespace" {
   default     = "g2-workshop"
 }
 
+variable "ssh_keys_dir" {
+  description = "Carpeta de las claves SSH generadas por scripts/gen-keys.sh, relativa a terraform/ (D-004)"
+  type        = string
+  default     = "../keys"
+}
+
 variable "web_num_replicas" {
   description = "Número de réplicas del Deployment web (el enunciado pide 3)"
   type        = number
