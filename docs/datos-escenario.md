@@ -25,20 +25,17 @@ cd /mnt/tmp/k8s_lab-calico-v02/shared/
 git clone https://github.com/arsn-g2/terraform-k8s-trabajofinal.git
 cd /mnt/tmp/k8s_lab-calico-v02/
 code .
-
+cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal
+chmod +x scripts/*
 # claves SSH del día (US-16): antes de crear los LXC y de terraform apply
-cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal
-chmod +x scripts/gen-keys.sh
 ./scripts/gen-keys.sh
-
 # VLAN 1000 (D-009): subinterfaz e2.1000 en los workers y LXC bbdd y logs (§9)
-cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal
 ./scripts/setup-vlan-workers.sh                    # crea e2.1000 en k8s-worker1 y k8s-worker2 (idempotente)
 ./scripts/setup-whereabouts.sh                     # instala el IPAM whereabouts v0.9.4 (D-010, idempotente)
-cd vnx
-# start the vlan and db, logs servers
+
+
+# start the vnx infra: bbdd, logs servers
 cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal/vnx
-sudo vnx -f vnx-vlan.xml --create
 sudo vnx -f vnx-vm-bdd-logs.xml --create
 
 

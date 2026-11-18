@@ -1,8 +1,8 @@
 # Fase 1 · Persona C: Seguridad
 
-Historias: [US-16](../../historias/persona-c.md#us-16) · Decisiones: [D-004](../../decisions.md) · Guía y pruebas detalladas: [ssh-keys.md](../ssh-keys.md)
+Historias: [US-16](../../historias/persona-c.md#us-16), [US-17](../../historias/persona-c.md#us-17), [US-18](../../historias/persona-c.md#us-18) · Decisiones: [D-004](../../decisions.md) · Guía y pruebas detalladas: [ssh-keys.md](../ssh-keys.md)
 
-En esta fase preparamos las claves SSH del escenario y las cargamos en Kubernetes como Secrets gestionados por Terraform. Las claves se generan en el host con un script del repositorio (`scripts/gen-keys.sh`) y los Secrets se definen en `terraform/ssh.tf`, en el namespace `g2-workshop`. Montarlas en los Pods y probar las conexiones SSH queda para US-17, US-18 y US-24.
+En esta fase preparamos las claves SSH del escenario y las cargamos en Kubernetes como Secrets gestionados por Terraform. Las claves se generan en el host con un script del repositorio (`scripts/gen-keys.sh`) y los Secrets se definen en `terraform/ssh.tf`, en el namespace `g2-workshop`. Después las montamos en el Pod admin y en los Pods web (US-17) y expusimos el SSH del admin con un Service `NodePort` (US-18). El acceso por la VLAN queda para US-24.
 
 ## US-16 · Claves SSH y Secrets
 
@@ -80,4 +80,105 @@ Aunque las claves se generan fuera de Terraform, al leerlas con `file()` su cont
 ### Coordinación con el equipo
 
 - **Persona A** (US-20, US-21): la pública del par 1 queda en `vnx/filetree/ssh/authorized_keys` para el `<filetree>` de los LXC. Usamos una subcarpeta propia (`ssh/`) para que, si el `filetree` incluye otras configuraciones (MariaDB, rsyslog), estas no acaben en `.ssh/`. Falta confirmar con A el usuario de destino en los LXC.
-- **US-17**: montará `ssh-admin-private` y `ssh-admin-authorized` en el Pod admin (con `fsGroup: 1000` y modo `0440`) y `ssh-web-authorized` en los Pods web, en un PR que revisará la persona B.
+- **US-17**: montamos `ssh-admin-private` y `ssh-admin-authorized` en el Pod admin (con `fsGroup: 1000` y modo `0440`) y `ssh-web-authorized` en los Pods web, en un PR que revisó la persona B.
+
+## US-17 · Pod de administración
+
+Evidencias: [`docs/capturas/us-17-*.txt`](../capturas/) · PR #4 (rama `us-17-admin`)
+
+### Antes de escribir el Pod: revisamos las imágenes
+
+Antes de montar nada, entramos en las imágenes `dgsgiros/admin-ssh` y `dgsgiros/nginx-ssh` para ver cómo vienen preparadas ([us-17-imagenes.txt](../capturas/us-17-imagenes.txt)):
+
+- `adminuser` y `webuser` tienen UID y GID 1000, y cada imagen ya trae un `~/.ssh` con permisos `700` y dueño el usuario;
+- `sshd` arranca solo, con `PubkeyAuthentication yes`, `PasswordAuthentication no` y `PermitRootLogin no`, así que el único acceso posible es con clave;
+- el admin lleva OpenSSH 8.9 (Ubuntu) y los web OpenSSH 10.0 (Debian). Los dos aceptan claves ed25519, con lo que confirmamos la elección de D-004.
+
+### El Pod admin
+
+En `terraform/admin-service-deployment.tf` desplegamos el admin como un Deployment de una réplica (`var.admin_num_replicas`), para que Kubernetes lo vuelva a crear si se cae. Sobre el borrador que ya teníamos:
+
+- **`nodeSelector`** `kubernetes.io/hostname = k8s-worker1`, como pide el enunciado. Así sabemos siempre en qué nodo está, algo que necesitamos en US-18 para el SSH por `NodePort` con `externalTrafficPolicy: Local`.
+- **`container_port = 22`**, el puerto de `sshd` (el borrador tenía el 80).
+- **`fsGroup: 1000`** en el `security_context` del Pod: Kubernetes crea los ficheros de los Secrets como `root`, pero con este campo les pone el grupo 1000, el de `adminuser`.
+- **La privada con modo `0440`, no `0600`.** Como el fichero es de `root`, con `0600` `adminuser` no podría leerlo. Con `0440` lo lee por grupo, y `ssh` no se queja de los permisos porque el fichero no es suyo.
+- **Un montaje por fichero, con `sub_path`.** Dos Secrets montados como volumen en el mismo directorio no pueden convivir (el segundo tapa al primero). Montamos cada clave como un fichero suelto (`~/.ssh/id_ed25519` y `~/.ssh/authorized_keys`), y así además conservamos el `~/.ssh` de la imagen con su dueño y sus permisos.
+
+Llamamos a la privada `id_ed25519`, el nombre que `ssh` busca por defecto para este tipo de clave, y corregimos la historia y la guía, que todavía decían `id_rsa`.
+
+Con esto, dentro del Pod, `adminuser` ve sus claves así ([us-17-claves-permisos.txt](../capturas/us-17-claves-permisos.txt)):
+
+```
+drwx------ 1 adminuser adminuser 4096 Nov 18 06:41 .
+-r--r--r-- 1 root      adminuser  102 Nov 18 06:41 authorized_keys
+-r--r----- 1 root      adminuser  411 Nov 18 06:41 id_ed25519
+```
+
+Temíamos que `sshd` rechazara el `authorized_keys` por `StrictModes`, pero no hizo falta el plan B del initContainer: `StrictModes` acepta ficheros cuyo dueño sea `root` o el propio usuario, siempre que nadie más pueda escribir en ellos, y aquí son de solo lectura.
+
+### La clave en los Pods web
+
+En los Pods web montamos el Secret `ssh-web-authorized` (la pública del par 1) en `/home/webuser/.ssh/authorized_keys`, también con `sub_path`. Un solo Secret sirve para las tres réplicas. Como este cambio toca `web-service-deployment.tf`, que es de la persona B, lo hicimos en un PR que revisó B.
+
+### Pruebas
+
+Todavía sin el Service de US-18, probamos el acceso desde el host con un `kubectl port-forward` al puerto 22 del Pod ([us-17-pruebas.txt](../capturas/us-17-pruebas.txt)):
+
+| Prueba | Resultado |
+|---|---|
+| El Pod admin corre en `k8s-worker1` | `Running`, `NODE k8s-worker1` |
+| `adminuser` lee su privada (`cat ~/.ssh/id_ed25519`) | ✅ |
+| `sshd` activo en el admin | ✅ proceso 1, `sshd -D -e` |
+| SSH admin → web como `webuser`, con el par 1 | ✅ responde con el nombre del Pod web |
+| SSH host → admin con `keys/par2_host` | ✅ entra como `adminuser` |
+| SSH host → admin con la clave del par 1 (prueba negativa) | ❌ `Permission denied (publickey)`, como esperábamos |
+
+La prueba negativa confirma la separación de D-004: la privada del par 1 abre los web, pero no el propio admin.
+
+El SSH al admin por su `NodePort` (`10.10.10.11:<nodePort>`) y por la VLAN quedan para US-18 y US-24.
+
+## US-18 · Service NodePort del admin
+
+Pruebas detalladas: [pruebas-us18.md](../useful/admin/pruebas-us18.md)
+
+### El Service
+
+En US-17 el admin ya tenía `sshd` y sus claves, pero solo podíamos llegar a él con un `kubectl port-forward`. Para que el host entre directamente, en `terraform/admin-service-deployment.tf` completamos el Service `admin-service`, que en el borrador todavía apuntaba al puerto 80:
+
+- **Tres puertos distintos.** `target_port = 22` es el puerto del contenedor, donde escucha `sshd`. `port = 2222` es el de la ClusterIP del Service, que solo se usa dentro del clúster y es el que pide el enunciado. `node_port = 30002` es el que se abre en la IP de cada nodo, y el que usamos desde el host. Lo fijamos en lugar de dejar que Kubernetes lo elija, para que el comando de SSH sea siempre el mismo, y además lo sacamos como output (`admin_service_node_port`).
+- **`externalTrafficPolicy: Local`.** Con el valor por defecto (`Cluster`), un nodo puede reenviar el paquete a un Pod que está en otro nodo, y para que la respuesta vuelva por él hace SNAT: cambia la IP de origen por la suya. Con `Local`, el nodo solo reenvía a Pods que están en él mismo y no hace SNAT, así que el Pod ve la IP real del cliente. Esto lo necesitamos para US-32, donde la NetworkPolicy solo dejará entrar desde `10.10.20.2/32`.
+
+**El acceso es solo por `10.10.10.11` (`k8s-worker1`)**, porque el Service es `NodePort` con `externalTrafficPolicy: Local` y el admin está fijado a `k8s-worker1`. Con `Local`, solo responde el nodo donde está el Pod, y en US-17 fijamos el admin en `k8s-worker1` con `nodeSelector`. Por eso el SSH va siempre a `10.10.10.11:30002`, como pide el enunciado. Por `10.10.10.12:30002` (`k8s-worker2`) la conexión da timeout: ese nodo no tiene un Pod admin y descarta el paquete en lugar de reenviarlo.
+
+Tras el `apply`, el Service queda como `NodePort`, `2222 → 22`, con `nodePort 30002` y `External Traffic Policy: Local`:
+
+![Service del admin](screenshots/us-18-admin-service-nodeport-targetport.jpg)
+
+### Pruebas
+
+El Service encuentra un único endpoint, la IP del Pod admin en el puerto 22. Si el selector o el namespace no cuadraran, saldría vacío y todas las pruebas siguientes darían timeout:
+
+![Endpoint del Service](screenshots/us-18-admin-svc-solo-un-endpoint-pod.jpg)
+
+Desde el host entramos por SSH con la privada del par 2, sin contraseña:
+
+```bash
+ssh -i keys/par2_host -p 30002 adminuser@10.10.10.11
+```
+
+Una vez dentro, `$SSH_CONNECTION` muestra la conexión tal como la ve `sshd` (`IP-cliente puerto IP-servidor puerto`). El origen es `10.10.20.2`, la IP del host, y no la de un nodo, lo que demuestra que no hubo SNAT: es el efecto de `Local` y de que `r1` enruta sin NAT. En la misma sesión comprobamos que las claves de US-17 siguen montadas con sus permisos y que `authorized_keys` tiene la pública del par 2 del día:
+
+![SSH del host al admin](screenshots/us-18-host-to-pod-ssh-using-adminuser.jpg)
+
+
+
+También comprobamos que por `k8s-worker2` no se puede entrar. Con la misma clave y el mismo puerto, pero a `10.10.10.12`, la conexión da timeout. No es un `Connection refused`, porque nadie responde: con `Local`, worker2 no tiene un Pod admin al que reenviar el paquete, y lo descarta:
+
+![SSH al admin por worker2: timeout](screenshots/us-18-host-to-worker2-ssh-using-adminuser-timeout.jpg)
+
+### Otros cambios de la rama
+
+- En `outputs.tf` faltaba la llave de cierre del output `vlan_web_range`, y la añadimos.
+- Borramos `scripts/create-keypairs.sh`, el script de OpenStack de la práctica P1.4, que ya no aplica (lo sustituye `gen-keys.sh`), y el `test.txt` que reservaba la carpeta `scripts/`.
+
+Con US-18, la parte de seguridad del hito H1 queda lista. Faltan las NetworkPolicies (US-30 y US-32), que se apoyan en la IP de origen que acabamos de comprobar.

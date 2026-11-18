@@ -34,6 +34,9 @@ The topology is in PDF Fig. 1: clients → Ingress → web Service → S1–S3. 
 - `decisions.md`: **the decision log is a required deliverable.** Every design choice or deviation from the PDF needs an entry (D-xxx) that follows the template at the top. Never delete an entry: mark the old one `Superseded by D-xxx`. When you make or propose a design choice, add or update an entry.
 - `docs/datos-escenario.md`: values measured in the deployed environment (IPs, versions, Multus plugins, Ingress NodePorts, MetalLB state). Values marked 🔁 can change between deployments.
 - `docs/convenciones.md`: git conventions (see below).
+- `ARSN-trabajo-final-26-27.md`: Markdown copy of the PDF spec, easier to search (the PDF still wins).
+- `memoria-draft.md`: the final report draft (US-42), filled in as each story closes.
+- `docs/ssh-keys.md` (SSH key pairs and where each key goes) and `docs/investigacion-multus.md` (Multus research notes).
 - `docs/useful/{multus,metallb,web}/`: guides, plus the P1.3 YAML in `p13/`, which is reference material for porting to Terraform.
 
 To mark a story done (or undo it) in every place it is tracked (`fases.md`, the persona table, and the `**Completed:**` line under the story):
@@ -48,12 +51,14 @@ python scripts/us-done.py --undo 16
   - `namespace.tf`: the dedicated namespace (`var.namespace`, D-002), used by every resource;
   - network (A): `multus.tf` (NADs `vlan1000-web`, whereabouts, and `vlan1000-admin`, static; D-005, D-009);
   - web (B): `web.tf` (ConfigMap rendered from `templates/index.html.tpl` with `templatefile()`), `web-service-deployment.tf` (web Deployment with the page sidecar + `ClusterIP` Service), `ingress.tf` (Ingress → web Service);
+  - SSH (C): `ssh.tf` (the 3 `kubernetes_secret_v1` loaded from `keys/`; `plan` fails with "no file exists" if `scripts/gen-keys.sh` hasn't run);
   - admin (C): `admin-service-deployment.tf` (Deployment + NodePort Service, first draft).
   Variables and outputs that no resource uses yet (`host_user_lan_ip`, `worker1_ip`) are commented out in `variables.tf`/`outputs.tf`; uncomment them when the resource that needs them is written. The target per-area file split (`namespace.tf`, `multus.tf`, `web.tf`, `ssh.tf`, `admin.tf`, `netpol.tf`) is in `plan.md` §3. Each person works in their own `.tf` file to avoid conflicts.
 - `terraform/terraform.tfvars` is tracked (`*.tfvars` is commented out in `.gitignore`) and sets `web_num_replicas = 3` (the PDF value). `admin_num_replicas` defaults to 1.
 - `temp-terraform-examples/terraform-k8s-example/` is the team's P1.4 k8s solution (Deployment + Service with locals, deny-all, ingress/egress NetworkPolicies, outputs). **It is the style reference.** `terraform-openstack-example/` is OpenStack and not relevant here.
-- Folders that contain an empty `test.txt` are placeholders. Delete the `test.txt` once the folder has real content.
-- Planned but not written yet: `scripts/gen-keys.sh` (`scripts/create-keypairs.sh` is the old P1.4 OpenStack script and does not apply), `scripts/verify.sh`, `vnx/filetree/` content, `README.md`. The LXC scenario is `vnx/vnx-vm-bdd-logs.xml` (one VLAN, D-009).
+- Folders that contain an empty `test.txt` are placeholders. Delete the `test.txt` once the folder has real content (`scripts/test.txt` is now stale; `vnx/filetree/test.txt` is still a placeholder).
+- `scripts/create-keypairs.sh` is the old P1.4 OpenStack script and does not apply; `scripts/gen-keys.sh` replaces it.
+- Planned but not written yet: `scripts/verify.sh`, `vnx/filetree/` content, `README.md`. The LXC scenario is `vnx/vnx-vm-bdd-logs.xml` (one VLAN, D-009).
 - Before creating or copying `.tf` files into a new working folder, ask the user.
 
 ## What has to be deployed
@@ -113,6 +118,8 @@ sudo vnx -f k8s_lab-terraform.xml -x install-terraform   # re-run if `terraform 
 # after cloning the repo into shared/ (see datos-escenario.md §1), before creating the LXC or terraform apply:
 cd shared/terraform-k8s-trabajofinal
 chmod +x scripts/gen-keys.sh && ./scripts/gen-keys.sh   # today's SSH keys → keys/ + vnx/filetree/ssh/ (US-16), no sudo
+./scripts/setup-vlan-workers.sh                    # e2.1000 on the workers; lost on every start-k8s-calico
+./scripts/setup-whereabouts.sh                     # whereabouts IPAM (D-010); after get-master-kubeconf, before apply
 # teardown: ./bin/stop-k8s-calico ; sudo vnx -f k8s_lab-terraform.xml --destroy
 ```
 
