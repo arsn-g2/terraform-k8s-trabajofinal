@@ -21,15 +21,15 @@ Requisito: las pruebas de [US-14](pruebas-us14.md) pasan (3 Pods `Running 2/2`, 
 
 ## 0. Preparación
 
-Desde el **host** (o desde `ssh root@k8s-master` si el `kubectl` del host falla por la diferencia de versión):
+Los comandos `kubectl` y `curl` se ejecutan desde el **host** (o desde `ssh root@k8s-master` si el `kubectl` del host falla por la diferencia de versión). Valores que usamos:
 
-```bash
-NS=g2-workshop               # var.namespace
-LBL='app=web'                # local.web_labels
-SVC=nginx-service            # Service web
-ING=g2-ingress               # Ingress
-RUTA=/servers-G2             # var.g2_ingress_path
-```
+| Valor | De dónde sale |
+|---|---|
+| `g2-workshop` | `var.namespace` |
+| `app=web` | `local.web_labels` |
+| `nginx-service` | nombre del Service web |
+| `g2-ingress` | nombre del Ingress |
+| `/servers-G2` | `var.g2_ingress_path` |
 
 En la VM `terraform`:
 
@@ -43,7 +43,7 @@ terraform output             # namespace, web_service_*, ingress_* si están des
 ## 1. El Service es `ClusterIP` en 8080 → 80
 
 ```bash
-kubectl get svc $SVC -n $NS -o wide
+kubectl get svc nginx-service -n g2-workshop -o wide
 ```
 
 Qué esperar:
@@ -52,7 +52,7 @@ Qué esperar:
 - `SELECTOR app=web`.
 
 ```bash
-kubectl get svc $SVC -n $NS -o jsonpath='{.spec.ports[0].port} -> {.spec.ports[0].targetPort}{"\n"}'
+kubectl get svc nginx-service -n g2-workshop -o jsonpath='{.spec.ports[0].port} -> {.spec.ports[0].targetPort}{"\n"}'
 # esperado: 8080 -> 80
 ```
 
@@ -63,8 +63,8 @@ kubectl get svc $SVC -n $NS -o jsonpath='{.spec.ports[0].port} -> {.spec.ports[0
 ## 2. El Service encuentra los 3 Pods (endpoints)
 
 ```bash
-kubectl get endpointslices -n $NS -l kubernetes.io/service-name=$SVC
-kubectl get pods -n $NS -l $LBL -o wide            # compara las IPs
+kubectl get endpointslices -n g2-workshop -l kubernetes.io/service-name=nginx-service
+kubectl get pods -n g2-workshop -l app=web -o wide            # compara las IPs
 ```
 
 Esperado: **3 IPs**, puerto **80**, las mismas que la columna `IP` de los Pods.
@@ -75,16 +75,38 @@ Esperado: **3 IPs**, puerto **80**, las mismas que la columna `IP` de los Pods.
 
 ## 3. El Service funciona dentro del clúster
 
-Desde un Pod temporal, primero por **nombre DNS** y luego por ClusterIP:
+Con un Pod temporal de `busybox`, en tres pasos: crearlo, ejecutar la prueba y borrarlo.
+
+**1. Crear el Pod** (se queda dormido una hora, el tiempo de hacer las pruebas):
 
 ```bash
-kubectl run tmp-curl -n $NS --rm -it --restart=Never --image=busybox -- \
-  sh -c "for i in 1 2 3 4 5 6; do wget -qO- http://$SVC:8080 | grep -o 'Pod: <b>[^<]*'; done"
+kubectl run tmp-curl -n g2-workshop --image=busybox --restart=Never -- sleep 3600
+kubectl wait -n g2-workshop --for=condition=Ready pod/tmp-curl --timeout=60s
+```
+
+**2. Ejecutar la prueba**, primero por **nombre DNS**:
+
+```bash
+kubectl exec -n g2-workshop tmp-curl -- sh -c \
+  "for i in 1 2 3 4 5 6; do wget -qO- http://nginx-service:8080 | grep -o 'Pod: <b>[^<]*'; done"
 ```
 
 Esperado: 6 líneas, con **nombres de Pod que van cambiando**: kube-proxy reparte las conexiones entre los endpoints.
 
-> Si aparece `warning: couldn't attach to pod/tmp-curl, falling back to streaming logs`, no es un error (ver [pruebas de US-14 §6.1](pruebas-us14.md#61-desde-fuera-del-pod-por-ip-de-pod-sin-service)).
+Y luego por la **ClusterIP**, sin pasar por el DNS:
+
+```bash
+CIP=$(kubectl get svc nginx-service -n g2-workshop -o jsonpath='{.spec.clusterIP}'); echo $CIP
+kubectl exec -n g2-workshop tmp-curl -- sh -c "wget -qO- http://$CIP:8080 | grep -o 'Pod: <b>[^<]*'"
+```
+
+**3. Borrar el Pod:**
+
+```bash
+kubectl delete pod -n g2-workshop tmp-curl --now
+```
+
+> **Por qué no `kubectl run --rm -it … -- <comando>`:** el comando termina en menos de un segundo, muchas veces antes de que `kubectl` consiga engancharse al Pod. Entonces no muestra la salida, solo que el Pod terminó (o `couldn't attach to pod`), y `--rm` lo borra junto con sus logs. Con `sleep` el Pod sigue vivo y `kubectl exec` siempre muestra la salida. `--now` evita esperar los 30 s de gracia, porque `sleep` no atiende la señal de parada.
 
 > **Por qué:** `nginx-service` se resuelve por el DNS del clúster (CoreDNS) a la ClusterIP, solo desde dentro del mismo namespace. Desde otro namespace hace falta `nginx-service.g2-workshop` o el nombre completo `nginx-service.g2-workshop.svc.cluster.local`.
 
@@ -101,8 +123,8 @@ curl -m 3 http://10.10.10.11:30001         # el NodePort antiguo: debe fallar (c
 ## 4. El objeto Ingress
 
 ```bash
-kubectl get ingress -n $NS
-kubectl describe ingress $ING -n $NS
+kubectl get ingress -n g2-workshop
+kubectl describe ingress g2-ingress -n g2-workshop
 ```
 
 Qué esperar en `get`:
@@ -148,7 +170,7 @@ kubectl exec -n ingress-nginx $CTRL -- grep -n "servers-G2" /etc/nginx/nginx.con
 ## 6. Acceso desde el host (criterio principal)
 
 ```bash
-curl -i http://$IP$RUTA
+curl -i http://$IP/servers-G2
 ```
 
 Esperado: `HTTP/1.1 200 OK` y el HTML con `CNVR/ARSN G2` y `Served by Pod: <b>nginx-deployment-…</b>`.
@@ -156,7 +178,7 @@ Esperado: `HTTP/1.1 200 OK` y el HTML con `CNVR/ARSN G2` y `Served by Pod: <b>ng
 Si MetalLB no tiene IP, por el NodePort del controller en cualquier nodo:
 
 ```bash
-curl -i http://10.10.10.11:$NP$RUTA
+curl -i http://10.10.10.11:$NP/servers-G2
 ```
 
 > **Por qué funciona desde el host:** el host (10.10.20.2) llega a `10.10.10.0/24` por `r1` (ruta en `k8s_lab-calico.xml`). La IP de MetalLB la anuncia por ARP el speaker de un nodo ([guía MetalLB §4](../metallb/guia-metallb.md)).
@@ -164,7 +186,7 @@ curl -i http://10.10.10.11:$NP$RUTA
 ### 6.1 Rutas que deben y no deben funcionar
 
 ```bash
-for p in $RUTA $RUTA/ $RUTA/index.html / /servers-G3 /servers_G2; do
+for p in /servers-G2 /servers-G2/ /servers-G2/index.html / /servers-G3 /servers_G2; do
   printf '%-22s ' "$p"; curl -s -o /dev/null -w '%{http_code}\n' http://$IP$p
 done
 ```
@@ -179,7 +201,7 @@ done
 ## 7. Balanceo entre los 3 Pods
 
 ```bash
-for i in $(seq 1 12); do curl -s http://$IP$RUTA | grep -o 'Pod: <b>[^<]*' | sed 's/.*<b>//'; done | sort | uniq -c
+for i in $(seq 1 12); do curl -s http://$IP/servers-G2 | grep -o 'Pod: <b>[^<]*' | sed 's/.*<b>//'; done | sort | uniq -c
 ```
 
 Esperado: **3 nombres**, repartidos más o menos por igual (unos 4 cada uno).
@@ -193,9 +215,9 @@ Esperado: **3 nombres**, repartidos más o menos por igual (unos 4 cada uno).
 Mira el log de acceso de un Pod web mientras haces un `curl`:
 
 ```bash
-POD=$(kubectl get pod -n $NS -l $LBL -o jsonpath='{.items[0].metadata.name}')
-kubectl logs -n $NS $POD -c nginx-server --tail=5 -f &
-for i in 1 2 3 4 5 6; do curl -s -o /dev/null http://$IP$RUTA; done
+POD=$(kubectl get pod -n g2-workshop -l app=web -o jsonpath='{.items[0].metadata.name}')
+kubectl logs -n g2-workshop $POD -c nginx-server --tail=5 -f &
+for i in 1 2 3 4 5 6; do curl -s -o /dev/null http://$IP/servers-G2; done
 kill %1
 ```
 
@@ -208,8 +230,8 @@ Esperado en el log: `"GET / HTTP/1.1" 200`, **no** `GET /servers-G2`.
 ## 9. Un Pod nuevo entra solo en el balanceo
 
 ```bash
-kubectl delete pod -n $NS $POD
-kubectl get endpointslices -n $NS -l kubernetes.io/service-name=$SVC -w   # Ctrl-C cuando vuelva a haber 3 IPs
+kubectl delete pod -n g2-workshop $POD
+kubectl get endpointslices -n g2-workshop -l kubernetes.io/service-name=nginx-service -w   # Ctrl-C cuando vuelva a haber 3 IPs
 ```
 
 Repite §7: siguen saliendo 3 nombres, uno de ellos **nuevo**, sin tocar ni el Service ni el Ingress.

@@ -22,15 +22,15 @@ Requisito: las pruebas de [US-17](../../../historias/persona-c.md#us-17) pasan (
 
 ## 0. Preparación
 
-Desde el **host** (o desde `ssh root@k8s-master` si el `kubectl` del host falla por la diferencia de versión), en la raíz del repo:
+Los comandos `kubectl` y `ssh` se ejecutan desde el **host**, en la raíz del repo (o desde `ssh root@k8s-master` si el `kubectl` del host falla por la diferencia de versión). Valores que usamos:
 
-```bash
-NS=g2-workshop               # var.namespace
-LBL='app=admin'              # local.admin_labels
-SVC=admin-service            # Service del admin
-NP=30002                     # node_port (terraform output admin_service_node_port)
-KEY=keys/par2_host           # privada del par 2: host → admin
-```
+| Valor | De dónde sale |
+|---|---|
+| `g2-workshop` | `var.namespace` |
+| `app=admin` | `local.admin_labels` |
+| `admin-service` | nombre del Service |
+| `30002` | `node_port` (`terraform output admin_service_node_port`) |
+| `keys/par2_host` | privada del par 2: host → admin |
 
 En la VM `terraform`:
 
@@ -45,7 +45,7 @@ terraform output admin_service_type        # "NodePort"
 ## 1. El Service es `NodePort` en 2222 → 22
 
 ```bash
-kubectl get svc $SVC -n $NS -o wide
+kubectl get svc admin-service -n g2-workshop -o wide
 ```
 
 Qué esperar:
@@ -54,7 +54,7 @@ Qué esperar:
 - `SELECTOR app=admin`.
 
 ```bash
-kubectl get svc $SVC -n $NS -o jsonpath='{.spec.ports[0].port} -> {.spec.ports[0].targetPort} (nodePort {.spec.ports[0].nodePort}){"\n"}'
+kubectl get svc admin-service -n g2-workshop -o jsonpath='{.spec.ports[0].port} -> {.spec.ports[0].targetPort} (nodePort {.spec.ports[0].nodePort}){"\n"}'
 # esperado: 2222 -> 22 (nodePort 30002)
 ```
 
@@ -65,7 +65,7 @@ kubectl get svc $SVC -n $NS -o jsonpath='{.spec.ports[0].port} -> {.spec.ports[0
 ## 2. `externalTrafficPolicy` es `Local`
 
 ```bash
-kubectl get svc $SVC -n $NS -o jsonpath='{.spec.externalTrafficPolicy}{"\n"}'
+kubectl get svc admin-service -n g2-workshop -o jsonpath='{.spec.externalTrafficPolicy}{"\n"}'
 # esperado: Local
 ```
 
@@ -76,8 +76,8 @@ kubectl get svc $SVC -n $NS -o jsonpath='{.spec.externalTrafficPolicy}{"\n"}'
 ## 3. El Service encuentra el Pod (endpoints)
 
 ```bash
-kubectl get endpointslices -n $NS -l kubernetes.io/service-name=$SVC
-kubectl get pods -n $NS -l $LBL -o wide            # compara la IP y mira la columna NODE
+kubectl get endpointslices -n g2-workshop -l kubernetes.io/service-name=admin-service
+kubectl get pods -n g2-workshop -l app=admin -o wide            # compara la IP y mira la columna NODE
 ```
 
 Esperado: **1 IP**, puerto **22**, la misma que la columna `IP` del Pod, y el Pod en `NODE k8s-worker1`.
@@ -88,14 +88,37 @@ Esperado: **1 IP**, puerto **22**, la misma que la columna `IP` del Pod, y el Po
 
 ## 4. El Service funciona dentro del clúster (ClusterIP)
 
-Desde un Pod temporal, por nombre DNS y puerto 2222:
+Con un Pod temporal de `busybox`, en tres pasos: crearlo, ejecutar la prueba y borrarlo.
+
+**1. Crear el Pod** (se queda dormido una hora, el tiempo de hacer las pruebas):
 
 ```bash
-kubectl run tmp-nc -n $NS --rm -it --restart=Never --image=busybox -- \
-  sh -c "echo | nc -w 3 $SVC 2222"
+kubectl run tmp-nc -n g2-workshop --image=busybox --restart=Never -- sleep 3600
+kubectl wait -n g2-workshop --for=condition=Ready pod/tmp-nc --timeout=60s
 ```
 
-Esperado: el banner de `sshd`, algo como `SSH-2.0-OpenSSH_9.x`.
+**2. Ejecutar la prueba**, por nombre DNS y puerto 2222:
+
+```bash
+kubectl exec -n g2-workshop tmp-nc -- sh -c 'echo | nc -w 3 admin-service 2222'
+```
+
+Esperado: el banner de `sshd` del admin, `SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.18`. Puede salir después `Invalid SSH identification string`: es `sshd` quejándose de que el `echo` no es un cliente SSH, no es un error de la prueba.
+
+Y por la ClusterIP, sin pasar por el DNS:
+
+```bash
+CIP=$(kubectl get svc admin-service -n g2-workshop -o jsonpath='{.spec.clusterIP}'); echo $CIP
+kubectl exec -n g2-workshop tmp-nc -- sh -c "echo | nc -w 3 $CIP 2222"
+```
+
+**3. Borrar el Pod:**
+
+```bash
+kubectl delete pod -n g2-workshop tmp-nc --now
+```
+
+> **Por qué no `kubectl run --rm -it … -- <comando>`:** el comando termina en menos de un segundo, muchas veces antes de que `kubectl` consiga engancharse al Pod. Entonces no muestra la salida, solo que el Pod terminó, y `--rm` lo borra junto con sus logs. Con `sleep` el Pod sigue vivo y `kubectl exec` siempre muestra la salida. `--now` evita esperar los 30 s de gracia, porque `sleep` no atiende la señal de parada.
 
 > **Por qué:** `nc` abre una conexión TCP y muestra lo primero que manda el servidor. SSH empieza siempre con ese banner, así que comprueba `port` → `targetPort` → `sshd` sin necesitar claves. Funciona porque todavía no hay NetworkPolicies (llegan en [US-30](../../../historias/persona-c.md#us-30)).
 
@@ -104,7 +127,7 @@ Esperado: el banner de `sshd`, algo como `SSH-2.0-OpenSSH_9.x`.
 ## 5. SSH desde el host por `k8s-worker1` (criterio principal)
 
 ```bash
-ssh -i $KEY -p $NP adminuser@10.10.10.11
+ssh -i keys/par2_host -p 30002 adminuser@10.10.10.11
 ```
 
 Esperado: entra **sin pedir contraseña** y el prompt es de `adminuser` en el Pod (`hostname` devuelve `admin-deployment-…`).
@@ -112,7 +135,7 @@ Esperado: entra **sin pedir contraseña** y el prompt es de `adminuser` en el Po
 Para ver qué clave se ofrece y cuál se acepta:
 
 ```bash
-ssh -v -i $KEY -p $NP adminuser@10.10.10.11 exit 2>&1 | grep -E "Connecting to|Offering|Server accepts|Authenticated"
+ssh -v -i keys/par2_host -p 30002 adminuser@10.10.10.11 exit 2>&1 | grep -E "Connecting to|Offering|Server accepts|Authenticated"
 ```
 
 Esperado: `Offering public key: keys/par2_host ED25519 …`, `Server accepts key` y `Authenticated to 10.10.10.11 ([10.10.10.11]:30002) using "publickey"`.
@@ -133,7 +156,7 @@ echo $SSH_CONNECTION
 O en una sola línea desde el host:
 
 ```bash
-ssh -i $KEY -p $NP adminuser@10.10.10.11 'echo $SSH_CONNECTION'
+ssh -i keys/par2_host -p 30002 adminuser@10.10.10.11 'echo $SSH_CONNECTION'
 ```
 
 > **Por qué:** `SSH_CONNECTION` es `IP-cliente puerto-cliente IP-servidor puerto-servidor` tal como lo ve `sshd`. Que salga `10.10.20.2` (y no `10.10.10.11` u otra IP de nodo) demuestra que no hubo SNAT: es el efecto de `Local` del §2 y de que `r1` no haga NAT.
@@ -143,8 +166,8 @@ ssh -i $KEY -p $NP adminuser@10.10.10.11 'echo $SSH_CONNECTION'
 Para ver la diferencia (y luego volver al estado de Terraform):
 
 ```bash
-kubectl patch svc $SVC -n $NS -p '{"spec":{"externalTrafficPolicy":"Cluster"}}'
-ssh -i $KEY -p $NP adminuser@10.10.10.11 'echo $SSH_CONNECTION'   # ahora sale una IP del nodo, no 10.10.20.2
+kubectl patch svc admin-service -n g2-workshop -p '{"spec":{"externalTrafficPolicy":"Cluster"}}'
+ssh -i keys/par2_host -p 30002 adminuser@10.10.10.11 'echo $SSH_CONNECTION'   # ahora sale una IP del nodo, no 10.10.20.2
 ```
 
 Después, en la VM `terraform`: `terraform plan` muestra el cambio (`Cluster` → `Local`, es la deriva que has provocado) y `terraform apply` lo deshace.
@@ -154,7 +177,7 @@ Después, en la VM `terraform`: `terraform plan` muestra el cambio (`Cluster` �
 ## 7. Por `k8s-worker2` **no** funciona
 
 ```bash
-ssh -i $KEY -p $NP -o ConnectTimeout=5 adminuser@10.10.10.12
+ssh -i keys/par2_host -p 30002 -o ConnectTimeout=5 adminuser@10.10.10.12
 # esperado: Connection timed out
 ```
 
@@ -174,7 +197,7 @@ ssh root@k8s-worker2 "iptables-save | grep admin-service"
 | Síntoma | Dónde mirar | Causa probable |
 |---|---|---|
 | `Connection refused` en `10.10.10.11:30002` | §1, §4 | `targetPort` no es 22, o `sshd` no está corriendo en el Pod |
-| `Connection timed out` en `10.10.10.11:30002` | §3, `kubectl get netpol -n $NS` | Sin endpoints (selector, namespace o Pod no `Ready`), el Pod no está en worker1, o hay una NetworkPolicy que bloquea |
+| `Connection timed out` en `10.10.10.11:30002` | §3, `kubectl get netpol -n g2-workshop` | Sin endpoints (selector, namespace o Pod no `Ready`), el Pod no está en worker1, o hay una NetworkPolicy que bloquea |
 | `Permission denied (publickey)` | §5 con `ssh -v`, pruebas de US-17 | La red funciona y falla la clave: `-i` equivocado, claves de otro día (repetir `gen-keys.sh` + `terraform apply`), o permisos de `~/.ssh/authorized_keys` en el Pod |
 | Pide contraseña | §5 con `ssh -v` | No ha ofrecido la clave: falta `-i` o el fichero no existe |
 | `UNPROTECTED PRIVATE KEY FILE!` | `ls -l keys/` | La privada no es `600` (ver [claves SSH](../../ssh-keys.md)) |
