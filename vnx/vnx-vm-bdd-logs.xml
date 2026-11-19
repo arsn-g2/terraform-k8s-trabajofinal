@@ -11,6 +11,7 @@ Description:
 Deployment of the LXC containers bbdd (database server) and logs (log server) on VlanNet.
 Taken from /mnt/tmp/k8s_lab-calico-v02/k8s_lab-vms-vlan.xml, and updated for the Terraform+K8s Final Project.
 Single shared VLAN 1000 (D-009): no router needed.
+bbdd runs MySQL 8.0.
 
 ARSN
 Universidad Politecnica de Madrid
@@ -48,6 +49,23 @@ SPAIN
     <if id="9" net="virbr0">
       <ipv4>dhcp</ipv4>
     </if>
+
+    <!-- MySQL + SSH. filetree copia config/SQL/clave; exec instala y arranca -->
+    <filetree seq="on_boot" root="/etc/mysql/mysql.conf.d/">filetree/bbdd/zz-bbdd.cnf</filetree>
+    <filetree seq="on_boot" root="/root/">filetree/bbdd/init.sql</filetree>
+    <filetree seq="on_boot" root="/root/.ssh/">filetree/ssh/authorized_keys</filetree>
+    <exec seq="on_boot" type="verbatim" ostype="system">
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update
+      apt-get install -y mysql-server openssh-server
+      chmod 700 /root/.ssh
+      chmod 600 /root/.ssh/authorized_keys
+      systemctl enable ssh
+      systemctl restart ssh
+      systemctl enable mysql
+      systemctl restart mysql
+      mysql -e "source /root/init.sql"
+    </exec>
   </vm>
 
   <vm name="logs" type="lxc" exec_mode="lxc-attach" arch="x86_64">

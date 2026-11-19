@@ -99,7 +99,7 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 - **Why:** to learn and show the sidecar pattern (containers sharing a volume, parallel lifecycle), which is also what you need when content changes while the Pod runs. B would be enough for a value that never changes, such as the Pod name.
 - **Consequences:** the sidecar must stay alive after writing the page (for example `sleep infinity`); otherwise the kubelet restarts it and the Pod goes into `CrashLoopBackOff`. Nginx can start before the page exists, so the first requests may return 403/404 for a moment. The sidecar runs for the Pod's whole life. US-14 (`historias/persona-b.md`) and `docs/useful/web/guia-web.md` §3.3 describe Option B and need updating.
 
-### D-009 One shared VLAN: 1000, 10.1.2.0/24
+### D-010 One shared VLAN: 1000, 10.1.2.0/24
 - **Date / author:** 2026-11-16 / Persona A, agreed by the team
 - **Status:** Accepted
 - **Context:** the PDF (§1 and §2) describes one VLAN shared by the web Pods, the admin Pod and the two LXC. The P1.3 template `k8s_lab-vms-vlan.xml`, which our `vnx/` files are based on, has two VLANs (1000 and 1001) joined by a `vlan-router`.
@@ -109,7 +109,7 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 - **Consequences:** `logs` moves to VLAN 1000 and the `vlan-router` is removed from the VNX files (US-12). `scripts/setup-vlan-workers.sh` creates only `e2.1000` (US-10). Terraform uses `vlan_id = 1000` and `vlan_subnet = "10.1.2.0/24"` (US-11).
 
 
-### D-010 whereabouts installed by a script on every start-up
+### D-011 whereabouts installed by a script on every start-up
 - **Date / author:** 2026-11-17 / Persona A
 - **Status:** Proposed
 - **Context:** D-005 picks `whereabouts` for the web Pods. The scenario does not include it and is rebuilt from scratch every day, so it has to be installed every time (US-11).
@@ -117,3 +117,18 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 - **Decision:** `scripts/setup-whereabouts.sh`, run on every start-up after `./bin/get-master-kubeconf` and before `terraform apply`. It installs a fixed release, `v0.9.4`, and pins the image to the same tag instead of `:latest`.
 - **Why:** whereabouts belongs to the cluster, like Multus: a DaemonSet in `kube-system` that copies the IPAM plugin to every node, plus two CRDs. It is not part of our application, and `terraform destroy` should not remove it. A fixed tag makes every start-up install the same version.
 - **Consequences:** start-up order: `setup-vlan-workers.sh` → `setup-whereabouts.sh` → VNX → `terraform apply`. If the script has not run, the web Pods stay in `ContainerCreating` because the node has no `whereabouts` plugin. `docs/datos-escenario.md` §1 and §4 describe it.
+
+### D-012 Database engine: MySQL instead of the proposed MariaDB
+- **Date / author:** 2026-11-19 / Persona C (US-20)
+- **Status:** Accepted
+- **Context:** PDF *proposes* installing MariaDB on the `bbdd` LXC, but that is a recommendation, not a hard requirement. The teacher suggested MySQL as a good DB too.
+- **Options considered:** MariaDB  or MySQL.
+- **Decision:** MySQL 8.0 (`mysql-server`) on `bbdd`, installed with a VNX `<exec>` and configured with `<filetree>`.
+- **Why:** instructor's suggestion; MySQL meets the same "database server" requirement and is apt-installable on the LXC (Internet egress via `eth9`/virbr0). Since the PDF only *proposes* MariaDB, this is a documented deviation, not a conflict.
+- **Consequences:**
+  - `vnx/vnx-vm-bdd-logs.xml`: `bbdd` gains `<exec>` (install `mysql-server`+`openssh-server`, enable, load SQL) and `<filetree>` (bind-address drop-in, `init.sql`, `authorized_keys`).
+  - The bind-address drop-in goes to `/etc/mysql/mysql.conf.d/` (MySQL path), not `/etc/mysql/mariadb.conf.d/`.
+  - The app user is created with `mysql_native_password` to avoid `caching_sha2_password` client issues.
+  - The real `init.sql` (with the DB password) stays out of Git (`.gitignore`); only `init.sql.example` is committed, and the password is shared with B and C privately.
+  - D-007 (DB client on the Pods) now refers to the MySQL client, not MariaDB.
+  - Docs still saying "MariaDB" (persona-a US-20, CLAUDE.md, datos-escenario) need a wording pass; not done yet.

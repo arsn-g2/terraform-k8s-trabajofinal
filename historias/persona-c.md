@@ -26,7 +26,7 @@
 | 0 | [US-03 · Cerrar las dudas pendientes](#us-03) | 1 | ⛔ | ⬜ |
 | 1 | [US-16 · Claves SSH y Secrets](#us-16) | 3 | 🤝 | ✅ |
 | 1 | [US-17 · Pod de administración](#us-17) | 5 | 🔀 | ✅ |
-| 1 | [US-18 · Service NodePort del admin](#us-18) | 3 | | ⬜ |
+| 1 | [US-18 · Service NodePort del admin](#us-18) | 3 | | ✅ |
 | 2 | [US-24 · SSH desde el admin por la VLAN](#us-24) | 5 | 🔀 | ⬜ |
 | 3 | [US-30 · Política de denegación por defecto](#us-30) | 3 | ⛔ | ⬜ |
 | 3 | [US-32 · SSH al admin solo desde la IP del host](#us-32) | 5 | ⚠️ | ⬜ |
@@ -107,7 +107,7 @@ Permisos, según el ejemplo del enunciado §2.5:
 
 <a id="us-18"></a>
 ### 🔑 US-18 · Service NodePort del admin · 3 pts
-**Completed:** ⬜ · **Depende de:** [US-17](#us-17)
+**Completed:** ✅ · **Depende de:** [US-17](#us-17)
 
 `kubernetes_service_v1` de tipo `NodePort`, `port = 2222`, `target_port = 22`, `external_traffic_policy = "Local"` (enunciado §4.2 y §5.3). Fijar `node_port` (por ejemplo, 30022) o sacarlo como `output`.
 

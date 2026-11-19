@@ -32,3 +32,6 @@ vnx/filetree/ssh/
 # Sistema / editor
 *.swp
 .DS_Store
+# init.sql con la contraseña real de la BD fuera de Git.
+# Se versiona solo init.sql.example
+vnx/filetree/bbdd/init.sql
