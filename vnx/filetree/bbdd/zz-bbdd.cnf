@@ -1,0 +1,4 @@
+# BD accesible desde la VLAN 1000 (10.1.2.0/24).
+# Drop-in que se carga despues de mysqld.cnf y sobreescribe bind-address.
+[mysqld]
+bind-address = 0.0.0.0
