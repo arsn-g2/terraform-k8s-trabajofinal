@@ -79,6 +79,21 @@ SPAIN
     <if id="9" net="virbr0">
       <ipv4>dhcp</ipv4>
     </if>
+
+    <!-- Rsyslog (514 UDP/TCP) + SSH. filetree copia config/clave; exec instala y arranca -->
+    <filetree seq="on_boot" root="/etc/rsyslog.d/">filetree/logs/10-remote.conf</filetree>
+    <filetree seq="on_boot" root="/root/.ssh/">filetree/ssh/authorized_keys</filetree>
+    <exec seq="on_boot" type="verbatim" ostype="system">
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update
+      apt-get install -y rsyslog openssh-server
+      chmod 700 /root/.ssh
+      chmod 600 /root/.ssh/authorized_keys
+      systemctl enable ssh
+      systemctl restart ssh
+      systemctl enable rsyslog
+      systemctl restart rsyslog
+    </exec>
   </vm>
 
 </vnx>

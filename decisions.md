@@ -74,9 +74,10 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
   - Files: `terraform/multus.tf` (two `kubernetes_manifest` NADs), `scripts/setup-vlan-workers.sh`, the VNX XML (one VLAN, no `vlan-router`).
 
 ### D-006 Log server function
-- **Status:** Proposed (US-21)
+- **Status:** Accepted (2026-11-19 / Persona C, US-21)
 - **Context:** the PDF names a "servidor de logs" but does not define what it does.
 - **Decision:** rsyslog receiving remote syslog (UDP/TCP 514) from Pods.
+- **Consequences:** `vnx/vnx-vm-bdd-logs.xml` gives `logs` an `<exec>` (install `rsyslog`+`openssh-server`) and `<filetree>` (`filetree/logs/10-remote.conf` loads `imudp`/`imtcp` on 514 and stores remote logs under `/var/log/remote/<host>/`, plus the par-1 `authorized_keys`). Test: `logger -n 10.1.2.101 prueba` from a Pod leaves the line on the LXC.
 
 ### D-007 DB client and default-deny egress
 - **Status:** Pending (US-23)
