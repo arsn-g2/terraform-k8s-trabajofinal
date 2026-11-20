@@ -1,0 +1,175 @@
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get net-attach-def -n g2-workshop
+NAME             AGE
+vlan1000-admin   80m
+vlan1000-web     80m
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get net-attach-def vlan1000-web -n g2-workshop
+NAME           AGE
+vlan1000-web   81m
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get net-attach-def vlan1000-web -n g2-workshop -o jsonpath='{.spec.config}{"\n"}'
+{"cniVersion":"0.3.1","ipam":{"range":"10.1.2.0/24","range_end":"10.1.2.50","range_start":"10.1.2.10","type":"whereabouts"},"master":"e2.1000","mode":"bridge","type":"macvlan"}
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl rollout status deployment/nginx-deployment -n g2-workshop
+deployment "nginx-deployment" successfully rolled out
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get pods -n g2-workshop -l app=web -o wide
+NAME                               READY   STATUS    RESTARTS   AGE     IP              NODE          NOMINATED NODE   READINESS GATES
+nginx-deployment-9586d84fd-2fj45   2/2     Running   0          9m10s   172.16.194.71   k8s-worker1   <none>           <none>
+nginx-deployment-9586d84fd-mpwcj   2/2     Running   0          8m55s   172.16.126.5    k8s-worker2   <none>           <none>
+nginx-deployment-9586d84fd-n8hbz   2/2     Running   0          9m28s   172.16.126.4    k8s-worker2   <none>           <none>
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ POD=$(kubectl get pod -n g2-workshop -l app=web -o jsonpath='{.items[0].metadata.name}'); echo $POD 
+kubectl get pod $POD -n g2-workshop -o jsonpath='{.metadata.annotations.k8s\.v1\.cni\.cncf\.io/network-status}{"\n"}'
+nginx-deployment-9586d84fd-2fj45
+[{
+    "name": "k8s-pod-network",
+    "interface": "eth0",
+    "ips": [
+        "172.16.194.71"
+    ],
+    "mac": "32:f8:2c:7c:e9:1b",
+    "default": true,
+    "dns": {}
+},{
+    "name": "g2-workshop/vlan1000-web",
+    "interface": "net1",
+    "ips": [
+        "10.1.2.11"
+    ],
+    "mac": "e6:4e:82:ca:85:1a",
+    "dns": {}
+}]
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get endpointslices -n g2-workshop -l kubernetes.io/service-name=nginx-service
+NAME                  ADDRESSTYPE   PORTS   ENDPOINTS                                 AGE
+nginx-service-gkqw6   IPv4          80      172.16.126.4,172.16.194.71,172.16.126.5   83m
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl exec -n g2-workshop $POD -c nginx-server -- ip -4 addr show net1
+4: net1@if13: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000 link-netnsid 0
+    inet 10.1.2.11/24 brd 10.1.2.255 scope global net1
+       valid_lft forever preferred_lft forever
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl exec -n g2-workshop $POD -c nginx-server -- ip -d link show net1 | grep macvlan
+    macvlan mode bridge bcqueuelen 1000 usedbcqueuelen 1000 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl exec -n g2-workshop $POD -c nginx-server -- ip route
+default via 169.254.1.1 dev eth0 
+10.1.2.0/24 dev net1 proto kernel scope link src 10.1.2.11 
+169.254.1.1 dev eth0 scope link 
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ for p in $(kubectl get pods -n g2-workshop -l app=web -o jsonpath='{.items[*].metadata.name}'); do
+  node=$(kubectl get pod $p -n g2-workshop -o jsonpath='{.spec.nodeName}')
+  ip=$(kubectl exec -n g2-workshop $p -c nginx-server -- ip -4 -o addr show net1 | awk '{print $4}')
+  echo "$p  $node  $ip"
+done
+nginx-deployment-9586d84fd-2fj45  k8s-worker1  10.1.2.11/24
+nginx-deployment-9586d84fd-mpwcj  k8s-worker2  10.1.2.12/24
+nginx-deployment-9586d84fd-n8hbz  k8s-worker2  10.1.2.10/24
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get ippools.whereabouts.cni.cncf.io -A
+NAMESPACE     NAME          AGE
+kube-system   10.1.2.0-24   86m
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get ippools.whereabouts.cni.cncf.io -A -o yaml | grep podref
+        podref: g2-workshop/nginx-deployment-9586d84fd-n8hbz
+        podref: g2-workshop/nginx-deployment-9586d84fd-2fj45
+        podref: g2-workshop/nginx-deployment-9586d84fd-mpwcj
+
+
+
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ for p in $(kubectl get pods -n g2-workshop -l app=web -o jsonpath='{.items[*].metadata.name}'); do
+  node=$(kubectl get pod $p -n g2-workshop -o jsonpath='{.spec.nodeName}')
+  ip=$(kubectl exec -n g2-workshop $p -c nginx-server -- ip -4 -o addr show net1 | awk '{print $4}')
+  echo "$p  $node  $ip"
+done
+nginx-deployment-9586d84fd-2fj45  k8s-worker1  10.1.2.11/24
+nginx-deployment-9586d84fd-mpwcj  k8s-worker2  10.1.2.12/24
+nginx-deployment-9586d84fd-n8hbz  k8s-worker2  10.1.2.10/24
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get ippools.whereabouts.cni.cncf.io -A
+NAMESPACE     NAME          AGE
+kube-system   10.1.2.0-24   86m
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get ippools.whereabouts.cni.cncf.io -A -o yaml | grep podref
+        podref: g2-workshop/nginx-deployment-9586d84fd-n8hbz
+        podref: g2-workshop/nginx-deployment-9586d84fd-2fj45
+        podref: g2-workshop/nginx-deployment-9586d84fd-mpwcj
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl exec -n g2-workshop $POD -c nginx-server -- ping -c2 10.1.2.100
+PING 10.1.2.100 (10.1.2.100) 56(84) bytes of data.
+64 bytes from 10.1.2.100: icmp_seq=1 ttl=64 time=1.24 ms
+64 bytes from 10.1.2.100: icmp_seq=2 ttl=64 time=0.308 ms
+
+--- 10.1.2.100 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1002ms
+rtt min/avg/max/mdev = 0.308/0.773/1.239/0.465 ms
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl exec -n g2-workshop $POD -c nginx-server -- ping -c2 10.1.2.101
+PING 10.1.2.101 (10.1.2.101) 56(84) bytes of data.
+64 bytes from 10.1.2.101: icmp_seq=1 ttl=64 time=0.904 ms
+64 bytes from 10.1.2.101: icmp_seq=2 ttl=64 time=0.216 ms
+
+--- 10.1.2.101 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1002ms
+rtt min/avg/max/mdev = 0.216/0.560/0.904/0.344 ms
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl exec -n g2-workshop $POD -c nginx-server -- ip route get 10.1.2.100
+10.1.2.100 dev net1 src 10.1.2.11 uid 0 
+    cache 
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ sudo lxc-attach -n bbdd -- ping -c2 10.1.2.10
+PING 10.1.2.10 (10.1.2.10) 56(84) bytes of data.
+64 bytes from 10.1.2.10: icmp_seq=1 ttl=64 time=1.70 ms
+64 bytes from 10.1.2.10: icmp_seq=2 ttl=64 time=0.673 ms
+
+--- 10.1.2.10 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 0.673/1.184/1.696/0.511 ms
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl exec -n g2-workshop $POD -c nginx-server -- ping -c2 -W2 10.1.2.5
+PING 10.1.2.5 (10.1.2.5) 56(84) bytes of data.
+
+--- 10.1.2.5 ping statistics ---
+2 packets transmitted, 0 received, 100% packet loss, time 1028ms
+
+command terminated with exit code 1
+
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl exec -n g2-workshop nginx-deployment-9586d84fd-2fj45 -c nginx-server -- ping -c2 10.1.2.12
+PING 10.1.2.12 (10.1.2.12) 56(84) bytes of data.
+64 bytes from 10.1.2.12: icmp_seq=1 ttl=64 time=1.01 ms
+64 bytes from 10.1.2.12: icmp_seq=2 ttl=64 time=3.00 ms
+
+--- 10.1.2.12 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 1.009/2.002/2.995/0.993 ms
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl exec -n g2-workshop nginx-deployment-9586d84fd-2fj45 -c nginx-server -- ping -c2 10.1.2.10
+PING 10.1.2.10 (10.1.2.10) 56(84) bytes of data.
+64 bytes from 10.1.2.10: icmp_seq=1 ttl=64 time=1.34 ms
+64 bytes from 10.1.2.10: icmp_seq=2 ttl=64 time=0.353 ms
+
+--- 10.1.2.10 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1002ms
+rtt min/avg/max/mdev = 0.353/0.847/1.341/0.494 ms
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ 
+
+
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}'); echo $IP
+for i in $(seq 1 12); do curl -s http://$IP/servers-G2 | grep -o 'Pod: <b>[^<]*' | sed 's/.*<b>//'; done | sort | uniq -c
+10.10.10.20
+      4 nginx-deployment-9586d84fd-2fj45
+      4 nginx-deployment-9586d84fd-mpwcj
+      4 nginx-deployment-9586d84fd-n8hbz
+
+
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get pods -n g2-workshop -l app=web -w
+NAME                               READY   STATUS    RESTARTS   AGE
+nginx-deployment-9586d84fd-2fj45   2/2     Running   0          41m
+nginx-deployment-9586d84fd-mpwcj   2/2     Running   0          41m
+nginx-deployment-9586d84fd-n8hbz   2/2     Running   0          41m
+nginx-deployment-9586d84fd-2fj45   2/2     Terminating   0          42m
+nginx-deployment-9586d84fd-2fj45   2/2     Terminating   0          42m
+nginx-deployment-9586d84fd-k72bm   0/2     Pending       0          0s
+nginx-deployment-9586d84fd-k72bm   0/2     Pending       0          1s
+nginx-deployment-9586d84fd-k72bm   0/2     ContainerCreating   0          2s
+nginx-deployment-9586d84fd-k72bm   0/2     ContainerCreating   0          6s
+nginx-deployment-9586d84fd-k72bm   0/2     ContainerCreating   0          8s
+nginx-deployment-9586d84fd-k72bm   0/2     ContainerCreating   0          9s
+nginx-deployment-9586d84fd-k72bm   2/2     Running             0          16s
+nginx-deployment-9586d84fd-2fj45   2/2     Terminating         0          42m
+nginx-deployment-9586d84fd-2fj45   0/2     Error               0          42m
+nginx-deployment-9586d84fd-2fj45   0/2     Error               0          42m
+nginx-deployment-9586d84fd-2fj45   0/2     Error               0          42m
+nginx-deployment-9586d84fd-k72bm   2/2     Running             0          106s
+
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl delete pod -n g2-workshop nginx-deployment-9586d84fd-2fj45
+pod "nginx-deployment-9586d84fd-2fj45" deleted
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ for p in $(kubectl get pods -n g2-workshop -l app=web -o jsonpath='{.items[*].metadata.name}'); do
+  node=$(kubectl get pod $p -n g2-workshop -o jsonpath='{.spec.nodeName}')
+  ip=$(kubectl exec -n g2-workshop $p -c nginx-server -- ip -4 -o addr show net1 | awk '{print $4}')
+  echo "$p  $node  $ip"
+done
+nginx-deployment-9586d84fd-k72bm  k8s-worker1  10.1.2.13/24
+nginx-deployment-9586d84fd-mpwcj  k8s-worker2  10.1.2.12/24
+nginx-deployment-9586d84fd-n8hbz  k8s-worker2  10.1.2.10/24

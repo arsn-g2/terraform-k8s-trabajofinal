@@ -26,7 +26,7 @@ Ya no hace falta esperar a nadie para el número de grupo ni las imágenes: el g
 | 1 | [US-13 · ConfigMap con la plantilla HTML](#us-13) | 2 | | ✅ |
 | 1 | [US-14 · Deployment web con página personalizada](#us-14) | 5 | 🤝 | ✅ |
 | 1 | [US-15 · Service ClusterIP e Ingress](#us-15) | 3 | ⚠️ | ✅ |
-| 2 | [US-22 · Interfaz Multus en los Pods web](#us-22) | 3 | 🔀 | ⬜ |
+| 2 | [US-22 · Interfaz Multus en los Pods web](#us-22) | 3 | 🔀 | ✅ |
 | 2 | [US-23 · Acceso a MySQL desde los web y el admin](#us-23) | 3 | 🔀 | ⬜ |
 | 3 | [US-31 · Acceso a los web solo desde el Ingress Controller](#us-31) | 5 | | ⬜ |
 | 4 | [US-40 · Script de verificación automática](#us-40) | 5 | 🔵 | ⬜ |
@@ -98,7 +98,7 @@ En `web.tf`, crear `kubernetes_config_map_v1` con un `index.html` que tenga un m
 
 <a id="us-22"></a>
 ### 🌐 US-22 · Interfaz Multus en los Pods web · 3 pts · 🔀
-**Completed:** ⬜ · **Depende de:** [US-11](persona-a.md#us-11), [US-14](#us-14)
+**Completed:** ✅ · **Depende de:** [US-11](persona-a.md#us-11), [US-14](#us-14)
 
 Agregar la anotación `k8s.v1.cni.cncf.io/networks` al template del Deployment, según el IPAM elegido por A en [US-11](persona-a.md#us-11) ([D-005](../decisions.md)).
 
