@@ -84,7 +84,7 @@ Fase 4  🔵 Verificación y entrega ►  B: US-40   A: US-41 🔀   C: US-42   
 
 | Historia | Persona | Pts | Depende de | Marcas | Completed |
 |---|---|---|---|---|---|
-| [US-30 · Política de denegación por defecto](historias/persona-c.md#us-30) | 🔐 C | 3 | Fase 2 completa (🚩 H2) | ⛔ | ⬜ |
+| [US-30 · Política de denegación por defecto](historias/persona-c.md#us-30) | 🔐 C | 3 | Fase 2 completa (🚩 H2) | ⛔ | ✅ |
 | [US-31 · Acceso a los web solo desde el Ingress Controller](historias/persona-b.md#us-31) | 🖥️ B | 5 | [US-30](historias/persona-c.md#us-30), [US-15](historias/persona-b.md#us-15) | ⚠️ | ⬜ |
 | [US-32 · SSH al admin solo desde la IP del host](historias/persona-c.md#us-32) | 🔐 C | 5 | [US-30](historias/persona-c.md#us-30), [US-18](historias/persona-c.md#us-18) | ⚠️ | ⬜ |
 | [US-33 · Validar que el tráfico de la VLAN sigue funcionando](historias/persona-a.md#us-33) | 🌐 A | 3 | [US-30](historias/persona-c.md#us-30), [US-24](historias/persona-c.md#us-24) | 🔀 | ⬜ |

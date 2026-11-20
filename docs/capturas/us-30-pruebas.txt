@@ -1,0 +1,27 @@
+## NetworkPolicy
+Name:         default-deny-all
+Namespace:    g2-workshop
+Created on:   2026-11-21 00:34:05 +0100 CET
+Labels:       <none>
+Annotations:  <none>
+Spec:
+  PodSelector:     <none> (Allowing the specific traffic to all pods in this namespace)
+  Allowing ingress traffic:
+    <none> (Selected pods are isolated for ingress connectivity)
+  Allowing egress traffic:
+    <none> (Selected pods are isolated for egress connectivity)
+  Policy Types: Ingress, Egress
+## Ingress (esperado 504 o timeout)
+000
+## SSH al admin (esperado timeout)
+ssh: connect to host 10.10.10.11 port 30002: Connection timed out
+## DNS desde un web (esperado: Could not resolve host)
+command terminated with exit code 28
+## VLAN desde un web (esperado: SÍ responde, net1 no pasa por Calico)
+PING 10.1.2.100 (10.1.2.100) 56(84) bytes of data.
+64 bytes from 10.1.2.100: icmp_seq=1 ttl=64 time=0.412 ms
+64 bytes from 10.1.2.100: icmp_seq=2 ttl=64 time=0.669 ms
+
+--- 10.1.2.100 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1002ms
+rtt min/avg/max/mdev = 0.412/0.540/0.669/0.128 ms
