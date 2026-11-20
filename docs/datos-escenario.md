@@ -11,8 +11,8 @@ Datos medidos en el entorno desplegado el **13/11/2026**. El entorno se crea **d
 En el host del laboratorio:
 
 ```bash
-/lab/cnvr/bin/get-k8s-calico                       # descarga el escenario en /mnt/tmp/k8s_lab-calico-v02
-cd /mnt/tmp/k8s_lab-calico-v02
+/lab/cnvr/bin/get-k8s-calico                       # descarga el escenario en /mnt/tmp/k8s_lab-calico-v03
+cd /mnt/tmp/k8s_lab-calico-v03
 ./bin/start-k8s-calico                             # crea el clúster, une los workers e intenta cargar MetalLB
 sudo vnx -f k8s_lab-calico.xml -x config_metallb   # relanzar (ver §6)
 kubectl get ipaddresspools -n metallb-system       # debe mostrar el pool
@@ -21,11 +21,11 @@ sudo vnx -f k8s_lab-terraform.xml -x install-terraform
 ./bin/get-master-kubeconf                          # kubeconfig → ~/.kube/config del host
 ./bin/set-terraform-kubeconf                       # kubeconfig → VM terraform
 
-cd /mnt/tmp/k8s_lab-calico-v02/shared/
+cd /mnt/tmp/k8s_lab-calico-v03/shared/
 git clone https://github.com/arsn-g2/terraform-k8s-trabajofinal.git
-cd /mnt/tmp/k8s_lab-calico-v02/
+cd /mnt/tmp/k8s_lab-calico-v03/
 code .
-cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal
+cd /mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal
 chmod +x scripts/*
 # claves SSH del día (US-16): antes de crear los LXC y de terraform apply
 ./scripts/gen-keys.sh
@@ -35,7 +35,8 @@ chmod +x scripts/*
 
 
 # start the vnx infra: bbdd, logs servers
-cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal/vnx
+cd /mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx
+sed 's/__CAMBIA_ESTA_PASSWORD__/1q2w3e4r/g' filetree/bbdd/init.sql.example > filetree/bbdd/init.sql
 sudo vnx -f vnx-vm-bdd-logs.xml --create
 
 
@@ -159,7 +160,7 @@ Los ficheros se editan desde el host; `terraform` se ejecuta dentro de la VM.
 
 ## 9. Escenario VNX complementario (LXC en `VlanNet`)
 
-Definido en `vnx/vnx-vm-bdd-logs.xml`, a partir de `k8s_lab-vms-vlan.xml` de la práctica 1.3 ([US-12](../historias/persona-a.md#us-12)). Desplegado el **16/11/2026**: los tags de `VlanNet` y el ping desde `k8s-worker1` por `e2.1000` a las dos IPs están en [`capturas/us-12-vnx-una-vlan.txt`](capturas/us-12-vnx-una-vlan.txt). Por ahora solo levanta la infraestructura básica, sin `exec` ni `filetree` (sin MariaDB, rsyslog ni claves SSH).
+Definido en `vnx/vnx-vm-bdd-logs.xml`, a partir de `k8s_lab-vms-vlan.xml` de la práctica 1.3 ([US-12](../historias/persona-a.md#us-12)). Desplegado el **16/11/2026**: los tags de `VlanNet` y el ping desde `k8s-worker1` por `e2.1000` a las dos IPs están en [`capturas/us-12-vnx-una-vlan.txt`](capturas/us-12-vnx-una-vlan.txt). Por ahora solo levanta la infraestructura básica, sin `exec` ni `filetree` (sin MySQL, rsyslog ni claves SSH).
 
 Hay **una sola VLAN compartida** (D-009): ID **1000**, subred `10.1.2.0/24`. La plantilla de P1.3 tenía dos VLAN (1000 y 1001) unidas por un `vlan-router`; con una sola VLAN el router sobra, así que se han quitado `vnx/vnx-vlan.xml` y el `vlan-router`, y los LXC ya no llevan la ruta `10.1.0.0/16`.
 
@@ -182,7 +183,7 @@ El nombre, el offset de MACs y la red de gestión tienen que ser distintos de lo
 Arranque y parada (el clúster tiene que estar levantado antes, porque crea `VlanNet`: en este XML tiene `managed="no"`):
 
 ```bash
-cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal
+cd /mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal
 ./scripts/setup-vlan-workers.sh              # e2.1000 en los workers
 sudo vnx -f vnx/vnx-vm-bdd-logs.xml --create
 sudo ovs-vsctl show                          # puertos de VlanNet y su tag (bbdd-e1 y logs-e1 con tag 1000)
@@ -244,7 +245,7 @@ Calico aplica las políticas en la **veth del lado del host de cada Pod** (`cali
                           ▼                    ▼
               ═════════ VLAN <id> en VlanNet (e2.<vlan> en los workers) ═════════
                      │                         │
-               LXC bbdd (MariaDB :3306)   LXC logs (rsyslog :514)
+               LXC bbdd (MySQL :3306)   LXC logs (rsyslog :514)
                no son Pods: aquí no hay NetworkPolicy
 ```
 
@@ -269,7 +270,7 @@ Calico aplica las políticas en la **veth del lado del host de cada Pod** (`cali
 
 ### 10.4 VLAN / `net1`: aquí sí importa que las IPs sean distintas
 
-- `net1` lo crea Multus a partir del NAD (macvlan sobre `e2.<vlan>`). Calico no le pone una veth `cali`, así que **ninguna NetworkPolicy aplica ahí**. El SSH admin → web por la VLAN y el acceso web → MariaDB no se filtran, y la denegación por defecto no los rompe.
+- `net1` lo crea Multus a partir del NAD (macvlan sobre `e2.<vlan>`). Calico no le pone una veth `cali`, así que **ninguna NetworkPolicy aplica ahí**. El SSH admin → web por la VLAN y el acceso web → MySQL no se filtran, y la denegación por defecto no los rompe.
 - La IP de esa interfaz la da el IPAM del NAD:
   - `static`: una IP fija por Pod. Sencillo para el único Pod admin, incómodo para 3 réplicas de un mismo Deployment.
   - `host-local`: un rango, pero **asignado por separado en cada worker**, así que S1 en worker1 y S2 en worker2 pueden recibir la misma IP. Es el problema de [D-005](../decisions.md) / [US-19](../historias/persona-a.md#us-19).

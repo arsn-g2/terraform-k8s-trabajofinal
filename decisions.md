@@ -54,7 +54,7 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 
 ### D-005 VLAN IPAM
 - **Date / author:** 2026-11-16 / Persona A
-- **Status:** Acepted.
+- **Status:** Accepted.
 - **Context:** the web servers are a Deployment of 3 replicas, so every Pod shares one template and one Multus annotation, and the replicas land on both workers. The P1.3 NAD uses `static` IPAM with the IP in each Pod's annotation, which a Deployment cannot do. `whereabouts` is not installed in the lab (checked 2026-11-13).
 - **Options considered:**
   - `static` (as in P1.3): tested; the Pods never start (`IPAM plugin returned missing IP config`).
@@ -81,7 +81,7 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 
 ### D-007 DB client and default-deny egress
 - **Status:** Pending (US-23)
-- **Context:** installing a MariaDB client with apt needs Internet egress, which the deny-all policy blocks.
+- **Context:** installing a MySQL client with apt (D-012) needs Internet egress, which the deny-all policy blocks.
 
 ### D-008 Spec version followed
 - **Date / author:** 2026-11-13 / team
@@ -93,7 +93,7 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 
 ### D-009 Page generation: sidecar container (Option A)
 - **Date / author:** 2026-11-16 / B
-- **Status:** Proposed
+- **Status:** Accepted (when US-14 was completed)
 - **Context:** PDF §3.2 allows either a sidecar (Option A) or an initContainer (Option B). D-003 had proposed B.
 - **Options considered:** A, a second `container` in the Pod that writes `index.html` into a shared `emptyDir` and stays running; B, an `init_container` that writes it once and exits.
 - **Decision:** Option A (sidecar).
@@ -132,4 +132,4 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
   - The app user is created with `mysql_native_password` to avoid `caching_sha2_password` client issues.
   - The real `init.sql` (with the DB password) stays out of Git (`.gitignore`); only `init.sql.example` is committed, and the password is shared with B and C privately.
   - D-007 (DB client on the Pods) now refers to the MySQL client, not MariaDB.
-  - Docs still saying "MariaDB" (persona-a US-20, CLAUDE.md, datos-escenario) need a wording pass; not done yet.
+  - Docs updated to say MySQL (2026-11-20). "MariaDB" remains only in the spec copy and where the difference is explained.

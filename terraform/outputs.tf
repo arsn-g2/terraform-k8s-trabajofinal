@@ -178,3 +178,9 @@ output "ssh_secret_names" {
     web_authorized   = kubernetes_secret_v1.ssh_web_authorized.metadata[0].name
   }
 }
+
+# US-22: anotación de Multus en el template de los Pods web
+output "web_multus_networks" {
+  description = "Redes Multus que piden los Pods web (anotación del template)"
+  value       = kubernetes_deployment_v1.web_servers.spec[0].template[0].metadata[0].annotations["k8s.v1.cni.cncf.io/networks"]
+}

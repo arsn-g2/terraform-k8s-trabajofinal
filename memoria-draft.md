@@ -10,7 +10,7 @@
 
 ## 1. Introducción
 
-En este trabajo desplegamos de forma automática, con Terraform, una aplicación web escalable sobre un clúster de Kubernetes con Calico y Multus. La aplicación consta de tres servidores web Nginx detrás de un Ingress y de un Pod de administración accesible por SSH. Todos se conectan, a través de una VLAN compartida, a un escenario VNX con dos contenedores LXC: una base de datos MariaDB (`bbdd`) y un servidor de logs (`logs`).
+En este trabajo desplegamos de forma automática, con Terraform, una aplicación web escalable sobre un clúster de Kubernetes con Calico y Multus. La aplicación consta de tres servidores web Nginx detrás de un Ingress y de un Pod de administración accesible por SSH. Todos se conectan, a través de una VLAN compartida, a un escenario VNX con dos contenedores LXC: una base de datos MySQL (`bbdd`) y un servidor de logs (`logs`).
 
 Nos repartimos el trabajo en tres áreas: red y VNX (Persona A), aplicación web (Persona B) y seguridad y administración (Persona C). Organizamos las tareas en historias de usuario agrupadas en cinco fases, cada una cerrada con un hito en el que los tres desplegamos todo de cero con `terraform destroy && terraform apply`.
 
@@ -85,13 +85,19 @@ Comprobamos que cada réplica muestra su propio nombre y que un Pod recreado mue
 
 ## 5. Fase 2: Integración por la VLAN
 
-**MariaDB (US-20).** Instalamos y configuramos MariaDB en el LXC `bbdd` con pasos `exec` y archivos del `filetree`, incluida la clave pública del par 1 en `authorized_keys`.
+**MySQL (US-20).** Instalamos y configuramos MySQL en el LXC `bbdd` con pasos `exec` y archivos del `filetree`, incluida la clave pública del par 1 en `authorized_keys`.
 
 **Servidor de logs (US-21).** Configuramos rsyslog en el LXC `logs` para recibir mensajes en el puerto 514 UDP/TCP (D-006).
 
-**Interfaz Multus en los web (US-22).** Agregamos la anotación de Multus al Deployment web para que cada réplica reciba su interfaz `net1` en la VLAN.
+**Interfaz Multus en los web (US-22).** Agregamos la anotación `k8s.v1.cni.cncf.io/networks` al template del Deployment web, apuntando a la NAD `vlan1000-web` (`macvlan` sobre `e2.1000`, IPAM `whereabouts`, D-005). Cada réplica conserva `eth0` (Calico), que siguen usando el Service y el Ingress, y recibe una segunda interfaz `net1` en la VLAN, por la que sale todo el tráfico hacia `10.1.2.0/24`. Comprobamos que:
+- los tres Pods reciben IPs de `net1` distintas, aunque estén en workers diferentes, porque whereabouts guarda las reservas en un `IPPool` común a todo el clúster;
+- desde los Pods web hay conectividad por la VLAN con `bbdd`, con `logs` y con los demás Pods web;
+- el Ingress sigue balanceando entre las tres réplicas;
+- un Pod recreado recibe una IP nueva de la VLAN.
 
-**Acceso a MariaDB (US-23).** Probamos la conexión a MariaDB desde los Pods web y desde el admin a través de la VLAN. ⟪PENDIENTE: cómo resolvimos la instalación del cliente (D-007)⟫
+El ping al admin queda pendiente de US-24. Detalle y capturas en [`docs/memoria/fase2-b.md`](docs/memoria/fase2-b.md).
+
+**Acceso a MySQL (US-23).** Probamos la conexión a MySQL desde los Pods web y desde el admin a través de la VLAN. ⟪PENDIENTE: cómo resolvimos la instalación del cliente (D-007)⟫
 
 **SSH por la VLAN (US-24).** Verificamos que desde el admin podemos entrar por SSH a los web y a los LXC usando la clave privada del par 1.
 
@@ -115,7 +121,7 @@ Comprobamos que cada réplica muestra su propio nombre y que un Pod recreado mue
 
 ## 7. Fase 4: Verificación y entrega
 
-**Script de verificación (US-40).** Escribimos `verify.sh`, que comprueba automáticamente los criterios de cada hito: balanceo del Ingress, SSH al admin, conectividad por la VLAN, MariaDB y el bloqueo de los accesos no autorizados.
+**Script de verificación (US-40).** Escribimos `verify.sh`, que comprueba automáticamente los criterios de cada hito: balanceo del Ingress, SSH al admin, conectividad por la VLAN, MySQL y el bloqueo de los accesos no autorizados.
 
 **Despliegue de cero (US-41).** Desplegamos todo el proyecto de punta a punta en otra computadora, siguiendo solo el README, y verificamos que `verify.sh` termina en verde.
 
@@ -135,7 +141,7 @@ El registro completo está en [decisions.md](decisions.md). Las más relevantes:
 | D-004 | Solo autenticación por clave, con dos pares SSH |
 | D-005 | IPAM de la VLAN: `whereabouts` para los web y `static` para el admin |
 | D-006 | rsyslog en el puerto 514 como servidor de logs |
-| D-007 | Cliente de MariaDB con egress bloqueado ⟪PENDIENTE⟫ |
+| D-007 | Cliente de MySQL con egress bloqueado ⟪PENDIENTE⟫ |
 | D-008 | Usamos la versión del enunciado del 5/11/2026 |
 
 ---

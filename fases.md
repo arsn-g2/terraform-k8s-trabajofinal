@@ -70,10 +70,10 @@ Fase 4  🔵 Verificación y entrega ►  B: US-40   A: US-41 🔀   C: US-42   
 
 | Historia | Persona | Pts | Depende de | Marcas | Completed |
 |---|---|---|---|---|---|
-| [US-20 · MariaDB en el LXC `bbdd`](historias/persona-a.md#us-20) | 🌐 A | 5 | [US-12](historias/persona-a.md#us-12), [US-16](historias/persona-c.md#us-16) | 🤝 🔀 | ⬜ |
-| [US-21 · Servidor de logs en el LXC `logs`](historias/persona-a.md#us-21) | 🌐 A | 3 | [US-12](historias/persona-a.md#us-12), [US-16](historias/persona-c.md#us-16) | | ⬜ |
-| [US-22 · Interfaz Multus en los Pods web](historias/persona-b.md#us-22) | 🖥️ B | 3 | [US-11](historias/persona-a.md#us-11), [US-14](historias/persona-b.md#us-14) | 🔀 | ⬜ |
-| [US-23 · Acceso a MariaDB desde los web y el admin](historias/persona-b.md#us-23) | 🖥️ B | 3 | [US-20](historias/persona-a.md#us-20), [US-22](historias/persona-b.md#us-22) | 🔀 | ⬜ |
+| [US-20 · MySQL en el LXC `bbdd`](historias/persona-a.md#us-20) | 🌐 A | 5 | [US-12](historias/persona-a.md#us-12), [US-16](historias/persona-c.md#us-16) | 🤝 🔀 | ✅ |
+| [US-21 · Servidor de logs en el LXC `logs`](historias/persona-a.md#us-21) | 🌐 A | 3 | [US-12](historias/persona-a.md#us-12), [US-16](historias/persona-c.md#us-16) | | ✅ |
+| [US-22 · Interfaz Multus en los Pods web](historias/persona-b.md#us-22) | 🖥️ B | 3 | [US-11](historias/persona-a.md#us-11), [US-14](historias/persona-b.md#us-14) | 🔀 | ✅ |
+| [US-23 · Acceso a MySQL desde los web y el admin](historias/persona-b.md#us-23) | 🖥️ B | 3 | [US-20](historias/persona-a.md#us-20), [US-22](historias/persona-b.md#us-22) | 🔀 | ⬜ |
 | [US-24 · SSH desde el admin por la VLAN](historias/persona-c.md#us-24) | 🔐 C | 5 | [US-11](historias/persona-a.md#us-11), [US-17](historias/persona-c.md#us-17), [US-20](historias/persona-a.md#us-20), [US-22](historias/persona-b.md#us-22) | 🔀 | ⬜ |
 
 🚩 **H2: Integración por VLAN.** Ping y SSH entre web ↔ admin ↔ `bbdd` ↔ `logs` por la VLAN, y `mysql` funciona desde los web y desde el admin.

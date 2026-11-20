@@ -39,7 +39,7 @@ Multus es un CNI "meta": deja que la red principal del clúster (Flannel en P1.3
 | `vmb3` | Pod | 1001 | `10.1.3.200/24` | `k8s-worker1` |
 | `vmb4` | Pod | 1001 | `10.1.3.201/24` | `k8s-worker2` |
 
-Las VMs externas salen de `k8s_lab-vms-vlan.xml`, que es **idéntico** en el escenario de Flannel y en el de Calico (está en la raíz de `/mnt/tmp/k8s_lab-calico-v02`). Todas cuelgan de `VlanNet`, la red OVS a la que están conectados los workers por `e2` (`<if id="2" net="VlanNet">`, igual en `k8s_lab-flannel.xml` y `k8s_lab-calico.xml`).
+Las VMs externas salen de `k8s_lab-vms-vlan.xml`, que es **idéntico** en el escenario de Flannel y en el de Calico (está en la raíz de `/mnt/tmp/k8s_lab-calico-v03`). Todas cuelgan de `VlanNet`, la red OVS a la que están conectados los workers por `e2` (`<if id="2" net="VlanNet">`, igual en `k8s_lab-flannel.xml` y `k8s_lab-calico.xml`).
 
 ### 2.2 Paso 1: arrancar las máquinas externas
 
@@ -281,7 +281,7 @@ kubectl exec -n <ns> <pod> -- ping -c 3 <ip-bbdd>
 Adaptación directa de los ficheros de P1.3 al escenario de Calico, en un namespace de pruebas. Con una VLAN de prueba (por ejemplo, 1000) y las IPs de P1.3, se puede probar **hoy** contra `vmA2` arrancando `k8s_lab-vms-vlan.xml`:
 
 ```bash
-cd /mnt/tmp/k8s_lab-calico-v02
+cd /mnt/tmp/k8s_lab-calico-v03
 sudo vnx -f k8s_lab-vms-vlan.xml -v -t                        # vmA2, vmB2, vlan-router
 bash shared/terraform-k8s-trabajofinal/docs/useful/multus/p13/set-subinterfaces.sh
 kubectl create ns multus-poc
@@ -291,7 +291,7 @@ kubectl -n multus-poc exec vma3 -- ping -c 3 10.1.2.100          # → vmA2
 kubectl -n multus-poc exec vma3 -- ping -c 3 10.1.2.201          # → vma4 en el otro worker
 # limpiar
 kubectl delete ns multus-poc
-sudo vnx -f /mnt/tmp/k8s_lab-calico-v02/k8s_lab-vms-vlan.xml --destroy
+sudo vnx -f /mnt/tmp/k8s_lab-calico-v03/k8s_lab-vms-vlan.xml --destroy
 ```
 
 Después, repetir con un Deployment de 2–3 réplicas y la opción de IPAM que se quiera evaluar.

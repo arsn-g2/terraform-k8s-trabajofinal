@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-REPO=/mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal
+REPO=/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal
 KEYS_DIR="$REPO/keys"
 FILETREE_SSH="$REPO/vnx/filetree/ssh"
 

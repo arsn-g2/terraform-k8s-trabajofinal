@@ -19,6 +19,12 @@ resource "kubernetes_deployment_v1" "web_servers" {
     template {
       metadata {
         labels = local.web_labels # app = "web"
+        # US-22: Multus añade net1 en la VLAN con la NAD[NetworkAttachmentDefinition] de (whereabouts).
+        # Va en el template porque Multus lee las anotaciones del Pod, no las del Deployment.
+        # Referenciar la NAD (y no escribir "vlan1000-web") hace que Terraform la cree antes.
+        annotations = {
+          "k8s.v1.cni.cncf.io/networks" = kubernetes_manifest.nad_web.manifest.metadata.name
+        }
       }
       spec {
         container {
@@ -118,7 +124,7 @@ resource "kubernetes_service_v1" "web_service" {
     namespace = kubernetes_namespace_v1.namespace.metadata[0].name
   }
   spec {
-    type = "ClusterIP"
+    type     = "ClusterIP"
     selector = local.web_labels # app = "web"
 
     port {
