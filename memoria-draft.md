@@ -89,7 +89,13 @@ Comprobamos que cada réplica muestra su propio nombre y que un Pod recreado mue
 
 **Servidor de logs (US-21).** Configuramos rsyslog en el LXC `logs` para recibir mensajes en el puerto 514 UDP/TCP (D-006).
 
-**Interfaz Multus en los web (US-22).** Agregamos la anotación de Multus al Deployment web para que cada réplica reciba su interfaz `net1` en la VLAN.
+**Interfaz Multus en los web (US-22).** Agregamos la anotación `k8s.v1.cni.cncf.io/networks` al template del Deployment web, apuntando a la NAD `vlan1000-web` (`macvlan` sobre `e2.1000`, IPAM `whereabouts`, D-005). Cada réplica conserva `eth0` (Calico), que siguen usando el Service y el Ingress, y recibe una segunda interfaz `net1` en la VLAN, por la que sale todo el tráfico hacia `10.1.2.0/24`. Comprobamos que:
+- los tres Pods reciben IPs de `net1` distintas, aunque estén en workers diferentes, porque whereabouts guarda las reservas en un `IPPool` común a todo el clúster;
+- desde los Pods web hay conectividad por la VLAN con `bbdd`, con `logs` y con los demás Pods web;
+- el Ingress sigue balanceando entre las tres réplicas;
+- un Pod recreado recibe una IP nueva de la VLAN.
+
+El ping al admin queda pendiente de US-24. Detalle y capturas en [`docs/memoria/fase2-b.md`](docs/memoria/fase2-b.md).
 
 **Acceso a MySQL (US-23).** Probamos la conexión a MySQL desde los Pods web y desde el admin a través de la VLAN. ⟪PENDIENTE: cómo resolvimos la instalación del cliente (D-007)⟫
 

@@ -13,6 +13,10 @@ Partimos de la plantilla de la P1.3, que tenía dos VLAN unidas por un `vlan-rou
 | `bbdd` | `eth1` (tag 1000) | `10.1.2.100` | MySQL 8.0 (3306) y SSH |
 | `logs` | `eth1` (tag 1000) | `10.1.2.101` | rsyslog (514 UDP/TCP) y SSH |
 
+En `VlanNet` (OVS), los puertos de los dos LXC son *access* con tag 1000, mientras que los de los workers no tienen tag (*trunk*) y por eso necesitan la subinterfaz `e2.1000`:
+
+![Puertos de los LXC en VlanNet con tag 1000](screenshots/us-20-21-ovs-vlantags.jpg)
+
 Cada LXC usa dos mecanismos de VNX:
 - **`<filetree>`** copia los ficheros de configuración desde [`vnx/filetree/`](../../vnx/filetree/) al arrancar;
 - **`<exec seq="on_boot">`** instala los paquetes con `apt`, ajusta los permisos de `/root/.ssh` y habilita los servicios. La salida a Internet para `apt` va por `eth9` (`virbr0`).
@@ -32,12 +36,35 @@ Al probar el escenario encontramos un fallo de orden: lanzamos el `sed` que gene
 
 ### Pruebas
 
-- MySQL activo y escuchando en `0.0.0.0:3306`; `appdb` y `appuser`@`10.1.2.%` creados.
+- MySQL y SSH activos, y los ficheros del `filetree` en su sitio: `zz-bbdd.cnf` junto a `mysqld.cnf`, `init.sql` en `/root/` y `authorized_keys` con permisos `600`.
+
+  ![Servicios activos y ficheros copiados en bbdd](screenshots/us-20-bbdd-config-mysql-isactive.jpg)
+
+- MySQL escucha en `0.0.0.0:3306`, así que el *drop-in* se aplicó. El puerto `33060` en `127.0.0.1` es el X Protocol de MySQL, que no usamos y sigue limitado a localhost.
+
+  ![MySQL escuchando en todas las interfaces](screenshots/us-20-bbdd-port-escucha-todas-interfaces.jpg)
+
+- El `init.sql` creó la base de datos `appdb` y el usuario `appuser`@`10.1.2.%` con `mysql_native_password`.
+
+  ![Base de datos y usuario creados por init.sql](screenshots/us-20-mysql-query.jpg)
+
 - Una conexión de `appuser` desde dentro del propio `bbdd` es rechazada (`Access denied for 'appuser'@'localhost'`). Es lo esperado: el usuario solo existe para la VLAN.
 - Desde un Pod temporal conectado a la VLAN con el NAD `vlan1000-web` (IP `10.1.2.10`, asignada por whereabouts), `mysql -h 10.1.2.100 -u appuser -p appdb` conecta. MySQL ve al cliente como `appuser@10.1.2.10`.
-- SSH a `bbdd` con la clave privada del par 1 entra sin contraseña; con la del par 2 es rechazado.
+- SSH a `bbdd` con la clave privada del par 1 entra sin contraseña; con la del par 2 es rechazado. Como el host no está en la VLAN, la conexión salta por `k8s-worker1` (`-J`), que sí lo está.
 
-⟪PENDIENTE: captura de la conexión MySQL desde el Pod en la VLAN⟫
+  ![SSH a bbdd por la VLAN con el par 1 y rechazo con el par 2](screenshots/us-20-host-to-worker1-ssh-to-bbdd.jpg)
+
+Conexión desde el Pod temporal `tmp-vlan` (`net1` = `10.1.2.10`). `USER()` es el origen de la conexión y `CURRENT_USER()` la cuenta que la aceptó:
+
+```
+$ kubectl exec -it -n g2-workshop tmp-vlan -- mysql -h 10.1.2.100 -u appuser -p appdb \
+    -e "SELECT CURRENT_USER(), USER(), @@hostname;"
++------------------+-------------------+------------+
+| CURRENT_USER()   | USER()            | @@hostname |
++------------------+-------------------+------------+
+| appuser@10.1.2.% | appuser@10.1.2.10 | bbdd       |
++------------------+-------------------+------------+
+```
 
 ## US-21 · Servidor de logs en `logs`
 
@@ -47,12 +74,29 @@ El enunciado no define qué hace el servidor de logs, así que decidimos que rec
 
 ### Pruebas
 
-- rsyslog escucha en 514 UDP y TCP, y `rsyslogd -N1` valida la configuración sin errores.
+- rsyslog escucha en 514 UDP y TCP (en IPv4 y en IPv6), y `rsyslogd -N1` valida la configuración sin errores.
+
+  ![rsyslog escuchando en 514 UDP/TCP y configuración válida](screenshots/us-21-config-logs.jpg)
 - Desde un worker, `logger -n 10.1.2.101 -P 514` envía un mensaje por TCP (`-T`) y otro por UDP (`-d`). Los dos aparecen en `/var/log/remote/k8s-worker1/syslog.log`.
 - Desde el Pod temporal en la VLAN (la imagen no trae `logger`) escribimos un mensaje syslog directamente en `/dev/udp/10.1.2.101/514` y `/dev/tcp/10.1.2.101/514`. Los dos llegan a `/var/log/remote/tmp-vlan/syslog.log`.
 - SSH a `logs` con la clave del par 1 entra sin contraseña.
 
-⟪PENDIENTE: captura de los mensajes en `/var/log/remote/`⟫
+Mensajes recibidos en `logs`, un fichero por origen (el worker y el Pod temporal):
+
+```
+$ sudo lxc-attach -n logs -- grep -r us21 /var/log/remote/
+/var/log/remote/k8s-worker1/syslog.log:Nov 20 18:09:38 k8s-worker1 root us21 prueba-worker-tcp
+/var/log/remote/k8s-worker1/syslog.log:Nov 20 18:09:38 k8s-worker1 root us21 prueba-worker-udp
+/var/log/remote/tmp-vlan/syslog.log:Nov 20 18:13:24 tmp-vlan us21: prueba-pod-udp
+/var/log/remote/tmp-vlan/syslog.log:Nov 20 18:13:48 tmp-vlan us21: prueba-pod-tcp
+```
+
+SSH a `logs` con el par 1, saltando por `k8s-worker1`:
+
+```
+$ ssh -i keys/par1_admin -o IdentitiesOnly=yes -J k8s-worker1 root@10.1.2.101 hostname
+logs
+```
 
 ## Observaciones
 
