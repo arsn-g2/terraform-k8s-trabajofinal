@@ -12,7 +12,7 @@ resource "kubernetes_deployment_v1" "admin_server" {
   }
 
   spec {
-       replicas = var.admin_num_replicas
+    replicas = var.admin_num_replicas
     selector {
       match_labels = local.admin_labels
     }
@@ -39,7 +39,7 @@ resource "kubernetes_deployment_v1" "admin_server" {
             ips  = [local.vlan_admin_cidr]
           }])
         }
-      }
+
       }
       spec {
         node_selector = {
