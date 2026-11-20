@@ -107,15 +107,51 @@ Esperado: `ERROR 1045 (28000): Access denied for user 'appuser'@'localhost'`.
 
 ## 3. US-20 · MySQL desde la VLAN
 
-Desde el worker con la IP temporal de §1 se comprueba el puerto (el worker no tiene cliente `mysql`):
+**Qué valida:** que el puerto 3306 de `bbdd` es accesible **por la VLAN**, es decir, que la VLAN (`e2.1000`, tag 1000 en OVS) y el `bind-address` de MySQL (`0.0.0.0`) están bien a la vez. **No** valida el login con usuario y contraseña: eso se hace desde un Pod (§7), que es lo que pide el enunciado (§2, paso 7).
+
+**Qué no es:** el enunciado no pide que los workers tengan IP en la VLAN; en el despliegue final solo transportan las tramas etiquetadas de los Pods. La IP `10.1.2.250` es una **herramienta de prueba** del equipo (viene del criterio de US-12) para probar la VLAN antes de que existan Pods con `net1`. Se pierde en cada reinicio del escenario y ningún script la crea.
+
+**1. Dar al worker una IP temporal en la VLAN** (fuera del rango de whereabouts `10–50` y de las IPs fijas `.100`/`.101`):
+
+```bash
+ssh k8s-worker1 'ip addr add 10.1.2.250/24 dev e2.1000 2>/dev/null; ip -4 addr show e2.1000'
+```
+
+Esperado: `inet 10.1.2.250/24` en `e2.1000`. El `2>/dev/null` hace que no falle si la IP ya estaba.
+
+**2. Comprobar por dónde sale el tráfico hacia `bbdd`:**
+
+```bash
+ssh k8s-worker1 'ip route get 10.1.2.100'
+```
+
+Esperado: `10.1.2.100 dev e2.1000 src 10.1.2.250`. Si sale `via 192.168.122.1 dev e9`, falta el paso 1: sin IP en `10.1.2.0/24` no hay ruta conectada a la VLAN y el worker manda los paquetes por la ruta por defecto (`virbr0`), donde nadie responde.
+
+**3. Conectividad L2/L3 (ping y ARP):**
+
+```bash
+ssh k8s-worker1 'ping -c2 -W1 10.1.2.100; ip neigh show 10.1.2.100'
+```
+
+Esperado: respuestas al ping y una entrada ARP `REACHABLE` (o `STALE`) con una MAC. Si el ARP sale `INCOMPLETE`/`FAILED`, la petición ARP no llega a `bbdd`: revisa el tag 1000 en OVS (§1).
+
+**4. El puerto de MySQL** (el worker no tiene cliente `mysql`, por eso se usa `nc`):
 
 ```bash
 ssh k8s-worker1 'nc -zv -w3 10.1.2.100 3306'      # "succeeded" / "open"
 ```
 
-El login completo con usuario y contraseña se hace desde un Pod (§7).
+Cómo leer el resultado:
+
+| Salida de `nc` | Significado | Dónde mirar |
+|---|---|---|
+| `succeeded` / `open` | VLAN y `bind-address` correctos | Seguir con §4 y §7 |
+| `Connection refused` | El paquete **llega** a `bbdd`, pero nada escucha en `10.1.2.100:3306` | §2.2 (`ss`): MySQL parado o en `127.0.0.1` |
+| `timed out` | **Nadie responde**: el paquete no llega o se pierde por el camino | Pasos 1–3 de esta sección |
 
 > **Por qué separar puerto y login:** `nc` solo abre la conexión TCP. Si funciona, la red y el `bind-address` están bien, y un fallo posterior del login ya solo puede ser del usuario o de la contraseña.
+>
+> **Por qué `refused` y `timed out` son distintos:** si el SYN llega a `bbdd` y ningún proceso escucha en ese puerto, el kernel de `bbdd` responde con un RST y `nc` dice `refused` al momento. Si no llega nada, nadie responde y `nc` espera los 3 s de `-w3`.
 
 ---
 
@@ -154,15 +190,69 @@ Esperado en `ss`: **dos** líneas, `udp ... 0.0.0.0:514` y `tcp LISTEN ... 0.0.0
 
 ## 6. US-21 · Enviar logs desde la VLAN
 
-Desde el worker con la IP temporal de §1, una vez por UDP y otra por TCP:
+**Qué valida:** que `logs` recibe mensajes syslog **por la VLAN**, por UDP y por TCP, y que rsyslog los guarda en `/var/log/remote/<host>/`. Es decir, que la VLAN (`e2.1000`, tag 1000 en OVS) y la configuración de `10-remote.conf` (§5) están bien a la vez. **No** es el criterio de US-21, que pide enviar el log **desde un Pod**: eso se hace en §7.
+
+**Qué no es:** igual que en §3, la IP `10.1.2.250` del worker es una **herramienta de prueba** del equipo, no un requisito del enunciado. Se pierde en cada reinicio del escenario y ningún script la crea.
+
+**1. Dar al worker una IP temporal en la VLAN** (no hace nada si ya la tiene de §1 o §3):
 
 ```bash
-ssh k8s-worker1 'logger -n 10.1.2.101 -P 514 -d "us21 prueba-worker-udp"; logger -n 10.1.2.101 -P 514 -T "us21 prueba-worker-tcp"'
+ssh k8s-worker1 'ip addr add 10.1.2.250/24 dev e2.1000 2>/dev/null; ip -4 addr show e2.1000'
+```
+
+Esperado: `inet 10.1.2.250/24` en `e2.1000`.
+
+**2. Comprobar por dónde sale el tráfico hacia `logs`:**
+
+```bash
+ssh k8s-worker1 'ip route get 10.1.2.101'
+```
+
+Esperado: `10.1.2.101 dev e2.1000 src 10.1.2.250`. Si sale `via 192.168.122.1 dev e9`, falta el paso 1 (mismo motivo que en §3).
+
+**3. Conectividad L2/L3 (ping y ARP):**
+
+```bash
+ssh k8s-worker1 'ping -c2 -W1 10.1.2.101; ip neigh show 10.1.2.101'
+```
+
+Esperado: respuestas al ping y una entrada ARP `REACHABLE` (o `STALE`). Si el ARP sale `INCOMPLETE`/`FAILED`, revisa el tag 1000 del puerto `logs-e1` en OVS (§1).
+
+**4. Enviar un mensaje por TCP y otro por UDP:**
+
+```bash
+ssh k8s-worker1 'logger -n 10.1.2.101 -P 514 -T "us21 prueba-worker-tcp"; echo "tcp: exit $?"'
+ssh k8s-worker1 'logger -n 10.1.2.101 -P 514 -d "us21 prueba-worker-udp"; echo "udp: exit $?"'
+```
+
+Esperado: `exit 0` en los dos. Si el de TCP falla, `logger` solo dice `failed to connect to 10.1.2.101 port 514` y no indica el motivo. Lo que distingue los dos casos es **cuánto tarda** en fallar, por el mismo motivo que `refused` y `timed out` en §3:
+
+| Cómo falla `logger -T` | Significado | Dónde mirar |
+|---|---|---|
+| Al momento, `exit 1` | El paquete **llega** a `logs`, pero nada escucha en TCP 514 (el kernel responde con RST) | §5 (`ss`): falta `imtcp` o rsyslog está parado |
+| Tras unos 2 minutos, `exit 1` | **Nadie responde**: el SYN no llega y el kernel agota sus reintentos | Pasos 1–3 de esta sección |
+
+Para no esperar 2 minutos, se puede comprobar el puerto como en §3: `ssh k8s-worker1 'nc -zv -w3 10.1.2.101 514'`.
+
+⚠️ El `exit 0` de UDP **no demuestra nada**: UDP no tiene conexión ni confirmación, así que `logger -d` termina bien aunque el mensaje se pierda. La única prueba de UDP es el paso 5.
+
+**5. Comprobar que los mensajes llegaron al LXC:**
+
+```bash
 sudo lxc-attach -n logs -- ls -R /var/log/remote/
 sudo lxc-attach -n logs -- grep -r us21 /var/log/remote/
 ```
 
 Esperado: una carpeta `/var/log/remote/k8s-worker1/` con las **dos** líneas en `syslog.log`.
+
+| Resultado | Significado | Dónde mirar |
+|---|---|---|
+| Las dos líneas | VLAN y rsyslog correctos, por los dos protocolos | Seguir con el SSH de abajo y §7 |
+| Solo la de TCP | UDP no llega o rsyslog no lo escucha | §5 (`ss`): falta `imudp` |
+| Ninguna, y el TCP dio `exit 0` | La red funciona, pero rsyslog no guarda en `/var/log/remote/` | `grep us21 /var/log/syslog` en `logs`: si está ahí, no se aplicó `10-remote.conf` (§5, `rsyslogd -N1`) |
+| Ninguna, y el TCP falló | Problema de red | Pasos 1–3 |
+
+> **Por qué TCP primero:** TCP es el único de los dos que da información en el emisor (conecta o no conecta). Si TCP funciona, la red está bien, y un fallo de UDP solo puede ser de rsyslog. Es la misma idea que separar puerto y login en §3.
 
 SSH al LXC con la clave del par 1, igual que en §4:
 

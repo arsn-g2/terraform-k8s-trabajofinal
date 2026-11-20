@@ -24,8 +24,8 @@
 | 1 | [US-10 · Subinterfaces VLAN en los workers](#us-10) | 3 | | ✅ |
 | 1 | [US-11 · NetworkAttachmentDefinition](#us-11) | 3 | ⛔ 🤝 | ✅ |
 | 1 | [US-12 · Escenario VNX con LXC](#us-12) | 5 | | ✅ |
-| 2 | [US-20 · MySQL en el LXC `bbdd`](#us-20) | 5 | 🤝 🔀 | ⬜ |
-| 2 | [US-21 · Servidor de logs](#us-21) | 3 | | ⬜ |
+| 2 | [US-20 · MySQL en el LXC `bbdd`](#us-20) | 5 | 🤝 🔀 | ✅ |
+| 2 | [US-21 · Servidor de logs](#us-21) | 3 | | ✅ |
 | 3 | [US-33 · Validar el tráfico de la VLAN con las políticas](#us-33) | 3 | 🔀 | ⬜ |
 | 4 | [US-41 · Despliegue de cero, de punta a punta](#us-41) | 3 | 🔀 🏁 | ⬜ |
 
@@ -158,7 +158,7 @@ Copiar `../../k8s_lab-vms-vlan.xml` (práctica 1.3) a `vnx/` y dejar dos contene
 
 <a id="us-20"></a>
 ### 🌐 US-20 · MySQL en el LXC `bbdd` · 5 pts · 🤝 🔀
-**Completed:** ⬜ · **Depende de:** [US-12](#us-12), [US-16](persona-c.md#us-16) · **Bloquea a:** [US-23](persona-b.md#us-23), [US-24](persona-c.md#us-24)
+**Completed:** ✅ · **Depende de:** [US-12](#us-12), [US-16](persona-c.md#us-16) · **Bloquea a:** [US-23](persona-b.md#us-23), [US-24](persona-c.md#us-24)
 
 En el XML de VNX (enunciado §2.6):
 - `<exec>` que instale `mysql-server` y `openssh-server` y los habilite;
@@ -170,7 +170,7 @@ En el XML de VNX (enunciado §2.6):
 
 <a id="us-21"></a>
 ### 🌐 US-21 · Servidor de logs en el LXC `logs` · 3 pts
-**Completed:** ⬜ · **Depende de:** [US-12](#us-12), [US-16](persona-c.md#us-16)
+**Completed:** ✅ · **Depende de:** [US-12](#us-12), [US-16](persona-c.md#us-16)
 
 Instalar SSH con el mismo `authorized_keys` (par 1) y el servicio de logs de [D-006](../decisions.md) (rsyslog escuchando en 514 UDP/TCP).
 

@@ -1,0 +1,311 @@
+Scenario "tf-bdd-logs" started
+
+ VM_NAME     | TYPE                | CONSOLE ACCESS COMMAND
+-----------------------------------------------------------------------------------------
+ bbdd        | lxc                 | con0:  'lxc-console -n bbdd'
+             |                     | con1:  'lxc-console -n bbdd'
+-----------------------------------------------------------------------------------------
+ logs        | lxc                 | con0:  'lxc-console -n logs'
+             |                     | con1:  'lxc-console -n logs'
+-----------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
+Total time elapsed: 86 seconds
+------------------------------------------------------------------------------------------
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ sudo lxc-ls -f 
+NAME      STATE   AUTOSTART GROUPS IPV4                                                   IPV6 UNPRIVILEGED 
+bbdd      RUNNING 0         -      10.1.2.100, 10.251.0.18, 192.168.122.45                -    false        
+logs      RUNNING 0         -      10.1.2.101, 10.251.0.22, 192.168.122.158               -    false        
+r1        RUNNING 0         -      10.10.10.1, 10.10.20.1, 192.168.122.169, 192.168.50.30 -    false        
+terraform RUNNING 0         -      10.10.10.13, 192.168.122.61, 192.168.50.102            -    false        
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ sudo lxc-attach -n bbdd -- ip -4 addr show eth1
+3: eth1@if31: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000 link-netnsid 0
+    inet 10.1.2.100/24 brd 10.1.2.255 scope global eth1
+       valid_lft forever preferred_lft forever
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ 
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ sudo lxc-attach -n logs -- ip -4 addr show eth1
+3: eth1@if34: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000 link-netnsid 0
+    inet 10.1.2.101/24 brd 10.1.2.255 scope global eth1
+       valid_lft forever preferred_lft forever
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ sudo ovs-vsctl show | grep -A2 -E 'bbdd-e1|logs-e1'
+        Port logs-e1
+            tag: 1000
+            Interface logs-e1
+        Port VlanNet
+            Interface VlanNet
+--
+        Port bbdd-e1
+            tag: 1000
+            Interface bbdd-e1
+        Port k8s-worker2-e2
+            Interface k8s-worker2-e2
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ sudo lxc-attach -n bbdd -- systemctl is-active mysql ssh  
+active
+active
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ sudo lxc-attach -n bbdd -- ls -l /etc/mysql/mysql.conf.d/ /root/init.sql /root/.ssh/authorized_keys
+-rw------- 1 root root  103 Nov 20 15:31 /root/.ssh/authorized_keys
+-rwxr-xr-x 1 root root  335 Nov 20 15:31 /root/init.sql
+
+/etc/mysql/mysql.conf.d/:
+total 22
+-rw-r--r-- 1 root root  132 Aug 19  2021 mysql.cnf
+-rw-r--r-- 1 root root 2220 Aug 19  2021 mysqld.cnf
+-rwxr-xr-x 1 root root  155 Nov 20 15:31 zz-bbdd.cnf
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ sudo lxc-attach -n bbdd -- ss -tlnp | grep 3306
+LISTEN    0         70               127.0.0.1:33060            0.0.0.0:*        users:(("mysqld",pid=722,fd=32))                                               
+LISTEN    0         151                0.0.0.0:3306             0.0.0.0:*        users:(("mysqld",pid=722,fd=34))                                               
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ sudo lxc-attach -n bbdd -- mysql -e "SHOW DATABASES; SELECT user, host, plugin FROM mysql.user WHERE user='appuser';"
++--------------------+
+| Database           |
++--------------------+
+| appdb              |
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
++--------------------+
++---------+----------+-----------------------+
+| user    | host     | plugin                |
++---------+----------+-----------------------+
+| appuser | 10.1.2.% | mysql_native_password |
++---------+----------+-----------------------+
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ sudo lxc-attach -n bbdd -- mysql -h 127.0.0.1 -u appuser -p appdb
+Enter password: 
+ERROR 1045 (28000): Access denied for user 'appuser'@'localhost' (using password: YES)
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ ssh k8s-worker1 'nc -zv -w3 10.1.2.100 3306'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+nc: connect to 10.1.2.100 port 3306 (tcp) timed out: Operation now in progress
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ 
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ 
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ # 1. Worker: does e2.1000 exist, is it UP, and does it have an IP on the VLAN?
+ssh k8s-worker1 'ip -d link show e2.1000 | grep -E "state|vlan"; ip -4 addr show e2.1000'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+13: e2.1000@e2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    vlan protocol 802.1Q id 1000 <REORDER_HDR> addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ # 2. Worker: which way does it send packets to 10.1.2.100?
+ssh k8s-worker1 'ip route get 10.1.2.100'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+10.1.2.100 via 192.168.122.1 dev e9 src 192.168.122.182 uid 0 
+    cache 
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ # 3. LXC: is bbdd running, with its IP on eth1?
+sudo lxc-ls -f
+sudo lxc-attach -n bbdd -- ip -4 addr show eth1
+NAME      STATE   AUTOSTART GROUPS IPV4                                                   IPV6 UNPRIVILEGED 
+bbdd      RUNNING 0         -      10.1.2.100, 10.251.0.18, 192.168.122.45                -    false        
+logs      RUNNING 0         -      10.1.2.101, 10.251.0.22, 192.168.122.158               -    false        
+r1        RUNNING 0         -      10.10.10.1, 10.10.20.1, 192.168.122.169, 192.168.50.30 -    false        
+terraform RUNNING 0         -      10.10.10.13, 192.168.122.61, 192.168.50.102            -    false        
+3: eth1@if31: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000 link-netnsid 0
+    inet 10.1.2.100/24 brd 10.1.2.255 scope global eth1
+       valid_lft forever preferred_lft forever
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ # 5. Layer 2/3 between them: ping, then check the ARP entry
+ssh k8s-worker1 'ping -c2 -W1 10.1.2.100; ip neigh show 10.1.2.100'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+PING 10.1.2.100 (10.1.2.100) 56(84) bytes of data.
+
+--- 10.1.2.100 ping statistics ---
+2 packets transmitted, 0 received, 100% packet loss, time 1068ms
+
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ # 6. Service: only once 1–5 pass. Is MySQL up and listening on every interface?
+sudo lxc-attach -n bbdd -- systemctl is-active mysql
+sudo lxc-attach -n bbdd -- ss -tlnp | grep 3306
+active
+LISTEN    0         70               127.0.0.1:33060            0.0.0.0:*        users:(("mysqld",pid=722,fd=32))                                               
+LISTEN    0         151                0.0.0.0:3306             0.0.0.0:*        users:(("mysqld",pid=722,fd=34))                                               
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ # 7. The original test
+ssh k8s-worker1 'nc -zv -w3 10.1.2.100 3306'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+nc: connect to 10.1.2.100 port 3306 (tcp) timed out: Operation now in progress
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ 
+
+
+----
+new -  added a new temp ip to the e2.100. in la vlan 
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ ssh k8s-worker1 'ip addr add 10.1.2.250/24 dev e2.1000 2>/dev/null; ip -4 addr show e2.1000'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+13: e2.1000@e2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    inet 10.1.2.250/24 scope global e2.1000
+       valid_lft forever preferred_lft forever
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ ssh k8s-worker1 'ip route get 10.1.2.100'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+10.1.2.100 dev e2.1000 src 10.1.2.250 uid 0 
+    cache 
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ ssh k8s-worker1 'ping -c2 -W1 10.1.2.100; ip neigh show 10.1.2.100'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+PING 10.1.2.100 (10.1.2.100) 56(84) bytes of data.
+64 bytes from 10.1.2.100: icmp_seq=1 ttl=64 time=12.8 ms
+64 bytes from 10.1.2.100: icmp_seq=2 ttl=64 time=0.212 ms
+
+--- 10.1.2.100 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 0.212/6.505/12.798/6.293 ms
+10.1.2.100 dev e2.1000 lladdr 02:fd:00:03:00:01 REACHABLE 
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ ssh k8s-worker1 'nc -zv -w3 10.1.2.100 3306'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+Connection to 10.1.2.100 3306 port [tcp/mysql] succeeded!
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx$ 
+
+
+
+--- 4--
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ ssh -i keys/par1_admin -o IdentitiesOnly=yes -J k8s-worker1 root@10.1.2.100 hostname
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+bbdd
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ ssh -i keys/par2_host -o IdentitiesOnly=yes -o PasswordAuthentication=no -J k8s-worker1 root@10.1.2.100 hostname
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+root@10.1.2.100: Permission denied (publickey,password).
+
+
+-- us-21
+
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ sudo lxc-attach -n logs -- ss -tulnp | grep 514
+udp     UNCONN   0        0                0.0.0.0:514            0.0.0.0:*      users:(("rsyslogd",pid=1780,fd=6))                                             
+udp     UNCONN   0        0                   [::]:514               [::]:*      users:(("rsyslogd",pid=1780,fd=7))                                             
+tcp     LISTEN   0        25               0.0.0.0:514            0.0.0.0:*      users:(("rsyslogd",pid=1780,fd=8))                                             
+tcp     LISTEN   0        25                  [::]:514               [::]:*      users:(("rsyslogd",pid=1780,fd=9))                                             
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ sudo lxc-attach -n logs -- rsyslogd -N1
+rsyslogd: version 8.2001.0, config validation run (level 1), master config /etc/rsyslog.conf
+rsyslogd: End of config validation run. Bye.
+
+
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ sudo lxc-attach -n logs -- ss -tulnp | grep 514
+udp     UNCONN   0        0                0.0.0.0:514            0.0.0.0:*      users:(("rsyslogd",pid=1780,fd=6))                                             
+udp     UNCONN   0        0                   [::]:514               [::]:*      users:(("rsyslogd",pid=1780,fd=7))                                             
+tcp     LISTEN   0        25               0.0.0.0:514            0.0.0.0:*      users:(("rsyslogd",pid=1780,fd=8))                                             
+tcp     LISTEN   0        25                  [::]:514               [::]:*      users:(("rsyslogd",pid=1780,fd=9))                                             
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ sudo lxc-attach -n logs -- rsyslogd -N1
+rsyslogd: version 8.2001.0, config validation run (level 1), master config /etc/rsyslog.conf
+rsyslogd: End of config validation run. Bye.
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ ssh k8s-worker1 'ip addr add 10.1.2.250/24 dev e2.1000 2>/dev/null; ip -4 addr show e2.1000'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+13: e2.1000@e2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    inet 10.1.2.250/24 scope global e2.1000
+       valid_lft forever preferred_lft forever
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ ssh k8s-worker1 'ip route get 10.1.2.101'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+10.1.2.101 dev e2.1000 src 10.1.2.250 uid 0 
+    cache 
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ ssh k8s-worker1 'ping -c2 -W1 10.1.2.101; ip neigh show 10.1.2.101'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+PING 10.1.2.101 (10.1.2.101) 56(84) bytes of data.
+64 bytes from 10.1.2.101: icmp_seq=1 ttl=64 time=13.9 ms
+64 bytes from 10.1.2.101: icmp_seq=2 ttl=64 time=0.267 ms
+
+--- 10.1.2.101 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 0.267/7.069/13.872/6.802 ms
+10.1.2.101 dev e2.1000 lladdr 02:fd:00:03:01:01 REACHABLE 
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ ssh k8s-worker1 'logger -n 10.1.2.101 -P 514 -T "us21 prueba-worker-tcp"; echo "tcp: exit $?"'
+ssh k8s-worker1 'logger -n 10.1.2.101 -P 514 -d "us21 prueba-worker-udp"; echo "udp: exit $?"'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+tcp: exit 0
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+udp: exit 0
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ sudo lxc-attach -n logs -- ls -R /var/log/remote/
+/var/log/remote/:
+k8s-worker1
+
+/var/log/remote/k8s-worker1:
+syslog.log
+(base) marilyn.smartinez@l023:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ sudo lxc-attach -n logs -- grep -r us21 /var/log/remote/
+lxc-attach: logs: ../src/lxc/attach.c: get_attach_context: 406 Connection refused - Failed to get init pid
+lxc-attach: logs: ../src/lxc/attach.c: lxc_attach: 1470 Connection refused - Failed to get attach context
+
+
+- NOTE- after restarting the complete environment ran all the tests below
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ ssh k8s-worker1 'ip addr add 10.1.2.250/24 dev e2.1000 2>/dev/null; ip -4 addr show e2.1000'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+13: e2.1000@e2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    inet 10.1.2.250/24 scope global e2.1000
+       valid_lft forever preferred_lft forever
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ ssh k8s-worker1 'ip route get 10.1.2.101'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+10.1.2.101 dev e2.1000 src 10.1.2.250 uid 0 
+    cache 
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ ssh k8s-worker1 'ping -c2 -W1 10.1.2.101; ip neigh show 10.1.2.101'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+PING 10.1.2.101 (10.1.2.101) 56(84) bytes of data.
+64 bytes from 10.1.2.101: icmp_seq=1 ttl=64 time=1.44 ms
+64 bytes from 10.1.2.101: icmp_seq=2 ttl=64 time=0.294 ms
+
+--- 10.1.2.101 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 0.294/0.866/1.438/0.572 ms
+10.1.2.101 dev e2.1000 lladdr 02:fd:00:03:01:01 REACHABLE 
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ ssh k8s-worker1 'logger -n 10.1.2.101 -P 514 -T "us21 prueba-worker-tcp"; echo "tcp: exit $?"'
+ssh k8s-worker1 'logger -n 10.1.2.101 -P 514 -d "us21 prueba-worker-udp"; echo "udp: exit $?"'
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+tcp: exit 0
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+udp: exit 0
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ sudo lxc-attach -n logs -- ls -R /var/log/remote/
+/var/log/remote/:
+k8s-worker1
+
+/var/log/remote/k8s-worker1:
+syslog.log
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ sudo lxc-attach -n logs -- grep -r us21 /var/log/remote/
+/var/log/remote/k8s-worker1/syslog.log:Nov 20 18:09:38 k8s-worker1 root us21 prueba-worker-tcp
+/var/log/remote/k8s-worker1/syslog.log:Nov 20 18:09:38 k8s-worker1 root us21 prueba-worker-udp
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ cd ..
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ ssh -i keys/par1_admin -o IdentitiesOnly=yes -J k8s-worker1 root@10.1.2.101 hostname
+Warning: Permanently added 'k8s-worker1' (ED25519) to the list of known hosts.
+The authenticity of host '10.1.2.101 (<no hostip for proxy command>)' can't be established.
+ED25519 key fingerprint is SHA256:vSlHgA4clXycdcjT1SMXVLIT/SeodhdTZnkv8+BIxV8.
+This host key is known by the following other names/addresses:
+    ~/.ssh/known_hosts:32: [hashed name]
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '10.1.2.101' (ED25519) to the list of known hosts.
+logs
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ kubectl run tmp-vlan -n g2-workshop --image=mysql:8.0 --restart=Never \
+  --annotations=k8s.v1.cni.cncf.io/networks=vlan1000-web --command -- sleep 3600 
+kubectl wait -n g2-workshop --for=condition=Ready pod/tmp-vlan --timeout=180s
+kubectl get pod -n g2-workshop tmp-vlan -o jsonpath='{.metadata.annotations.k8s\.v1\.cni\.cncf\.io/network-status}{"\n"}'
+pod/tmp-vlan created
+
+pod/tmp-vlan condition met
+[{
+    "name": "k8s-pod-network",
+    "interface": "eth0",
+    "ips": [
+        "172.16.126.3"
+    ],
+    "mac": "52:e3:b2:f0:2a:4f",
+    "default": true,
+    "dns": {}
+},{
+    "name": "g2-workshop/vlan1000-web",
+    "interface": "net1",
+    "ips": [
+        "10.1.2.10"
+    ],
+    "mac": "c2:d9:35:83:ce:9f",
+    "dns": {}
+}]
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ 
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ kubectl get pods -n g2-workshop
+NAME                                READY   STATUS    RESTARTS   AGE
+admin-deployment-695f5c5db-z2qc5    1/1     Running   0          5m31s
+nginx-deployment-6d7f7b9b89-cw4mn   2/2     Running   0          5m31s
+nginx-deployment-6d7f7b9b89-j6clp   2/2     Running   0          5m31s
+nginx-deployment-6d7f7b9b89-rmh9s   2/2     Running   0          5m31s
+tmp-vlan                            1/1     Running   0          75s
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ kubectl exec -it -n g2-workshop tmp-vlan -- mysql -h 10.1.2.100 -u appuser -p appdb \
+  -e "SELECT CURRENT_USER(), USER(), @@hostname;"
+Enter password: 
++------------------+-------------------+------------+
+| CURRENT_USER()   | USER()            | @@hostname |
++------------------+-------------------+------------+
+| appuser@10.1.2.% | appuser@10.1.2.10 | bbdd       |
++------------------+-------------------+------------+
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ kubectl exec -n g2-workshop tmp-vlan -- bash -c \
+  'echo "<14>$(date "+%b %e %H:%M:%S") $HOSTNAME us21: prueba-pod-udp" > /dev/udp/10.1.2.101/514'
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ 
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ kubectl exec -n g2-workshop tmp-vlan -- bash -c \
+  'echo "<14>$(date "+%b %e %H:%M:%S") $HOSTNAME us21: prueba-pod-tcp" > /dev/tcp/10.1.2.101/514'
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ 
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ sudo lxc-attach -n logs -- grep -r prueba-pod /var/log/remote/
+/var/log/remote/tmp-vlan/syslog.log:Nov 20 18:13:24 tmp-vlan us21: prueba-pod-udp
+/var/log/remote/tmp-vlan/syslog.log:Nov 20 18:13:48 tmp-vlan us21: prueba-pod-tcp
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ kubectl delete pod -n g2-workshop tmp-vlan --now
+pod "tmp-vlan" deleted
+(base) marilyn.smartinez@l041:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal$ 

@@ -67,7 +67,7 @@ Full requirements: PDF §2–§5. Stories: `historias/`.
   - Pods get an extra interface (`net1`) through a Multus `NetworkAttachmentDefinition`, created with `kubernetes_manifest` because the provider has no native resource for it. The plan is `macvlan` bridge on `e2.<vlan>`.
   - The workers need `e2.<vlan>` subinterfaces. The interface is **`e2`**, not `eth2`, and it is on the OVS net `VlanNet`.
   - The LXC `bbdd` (MySQL 8.0, D-012; its config drop-in goes to `/etc/mysql/mysql.conf.d/`, not the MariaDB path) and `logs` (rsyslog on 514, D-006) live in a separate VNX XML based on `k8s_lab-vms-vlan.xml` from P1.3. It uses `exec` steps to install packages and `filetree` for configs and `authorized_keys`.
-  - VLAN 1000, subnet `10.1.2.0/24` (D-009). IPAM: `whereabouts` for the web Pods, installed on every start-up by `scripts/setup-whereabouts.sh` (D-010), and `static` for the admin (D-005). NADs: `vlan1000-web` and `vlan1000-admin`.
+  - VLAN 1000, subnet `10.1.2.0/24` (D-010). IPAM: `whereabouts` for the web Pods, installed on every start-up by `scripts/setup-whereabouts.sh` (D-011), and `static` for the admin (D-005). NADs: `vlan1000-web` and `vlan1000-admin`.
 - **SSH (keys only, D-004)**: two pairs, generated each day by `ssh-keygen` into the git-ignored `keys/` and loaded with `file()` into three `kubernetes_secret_v1` (never `kubectl create secret`):
   - `ssh-admin-private`: the pair 1 private key, for the admin Pod;
   - `ssh-admin-authorized`: the pair 2 public key, for host → admin;
@@ -96,7 +96,7 @@ The lab environment lives on temporary storage and is **rebuilt from scratch eve
   - host 10.10.20.2 on `user_LAN`;
   - MetalLB pool `10.10.10.20-30`.
   - Details are in `docs/datos-escenario.md`.
-- Multus (thick) and its NAD CRD are already installed. `whereabouts` is **not** part of the scenario: `scripts/setup-whereabouts.sh` installs it on every start-up (D-010).
+- Multus (thick) and its NAD CRD are already installed. `whereabouts` is **not** part of the scenario: `scripts/setup-whereabouts.sh` installs it on every start-up (D-011).
 - Provider: `hashicorp/kubernetes` pinned to `2.23.0`. `.terraform.lock.hcl` is not committed. Prefer the `_v1` resources.
 
 ### Daily bring-up (host)
@@ -115,7 +115,7 @@ sudo vnx -f k8s_lab-terraform.xml -x install-terraform   # re-run if `terraform 
 cd shared/terraform-k8s-trabajofinal
 chmod +x scripts/gen-keys.sh && ./scripts/gen-keys.sh   # today's SSH keys → keys/ + vnx/filetree/ssh/ (US-16), no sudo
 ./scripts/setup-vlan-workers.sh                    # e2.1000 on the workers; lost on every start-k8s-calico
-./scripts/setup-whereabouts.sh                     # whereabouts IPAM (D-010); after get-master-kubeconf, before apply
+./scripts/setup-whereabouts.sh                     # whereabouts IPAM (D-011); after get-master-kubeconf, before apply
 # teardown: ./bin/stop-k8s-calico ; sudo vnx -f k8s_lab-terraform.xml --destroy
 ```
 
