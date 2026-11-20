@@ -1,6 +1,6 @@
 # 🗺️ Plan de trabajo: Trabajo Final ARSN/CNVR 2026-27
 
-**Objetivo:** desplegar automáticamente, con Terraform, una aplicación web escalable sobre Kubernetes (Calico + Multus). La aplicación se conecta por una VLAN compartida a un escenario VNX con contenedores LXC (MariaDB y servidor de logs).
+**Objetivo:** desplegar automáticamente, con Terraform, una aplicación web escalable sobre Kubernetes (Calico + Multus). La aplicación se conecta por una VLAN compartida a un escenario VNX con contenedores LXC (MySQL y servidor de logs).
 
 **Equipo:** 3 personas (**Persona A**, **Persona B** y **Persona C**). Reemplacen los nombres cuando repartan los roles.
 
@@ -42,7 +42,7 @@ Iconos de tipo de historia: 🏗️ preparación · 🌐 red · 🖥️ web · �
 
 | Persona | Área | Qué le toca | Historias |
 |---|---|---|---|
-| **A** | 🌐 **Red y VNX** | Subinterfaces VLAN en los workers, `NetworkAttachmentDefinition` (Multus), escenario VNX, LXC de MariaDB y del servidor de logs | [persona-a.md](historias/persona-a.md) |
+| **A** | 🌐 **Red y VNX** | Subinterfaces VLAN en los workers, `NetworkAttachmentDefinition` (Multus), escenario VNX, LXC de MySQL y del servidor de logs | [persona-a.md](historias/persona-a.md) |
 | **B** | 🖥️ **Aplicación web** | Esqueleto de Terraform, ConfigMap, Deployment de Nginx con la página personalizada, Service ClusterIP, Ingress, script de verificación | [persona-b.md](historias/persona-b.md) |
 | **C** | 🔐 **Seguridad y administración** | Repositorio, claves SSH y Secrets, Pod admin, Service NodePort, NetworkPolicies, memoria final | [persona-c.md](historias/persona-c.md) |
 
@@ -63,7 +63,7 @@ La versión del enunciado del **5 de noviembre de 2026** y el entorno desplegado
 | 1 | Dirección de las claves SSH | ✅ Enunciado §2.5: **dos pares**. Par 1 (admin → web/LXC): privada en el admin, pública en los web y los LXC. Par 2 (host → admin): privada en el host, pública en el admin ([D-004](decisions.md)) |
 | 2 | Número de grupo `X` | ✅ Grupo 2, ruta `/servers-G2` ([D-001](decisions.md)) |
 | 3 | ID de VLAN y subred | ✅ Una sola VLAN compartida: **1000**, `10.1.2.0/24` ([D-009](decisions.md)) |
-| 4 | Imágenes | ✅ Enunciado §2.1: `dgsgiros/nginx-ssh:latest` (`webuser`) y `dgsgiros/admin-ssh:latest` (`adminuser`), ambos GID 1000 y con `sudo`. Traen ping, nmap, curl, ip e ifconfig. Falta comprobar si traen cliente de MariaDB ([D-007](decisions.md)) |
+| 4 | Imágenes | ✅ Enunciado §2.1: `dgsgiros/nginx-ssh:latest` (`webuser`) y `dgsgiros/admin-ssh:latest` (`adminuser`), ambos GID 1000 y con `sudo`. Traen ping, nmap, curl, ip e ifconfig. Falta comprobar si traen cliente de MySQL ([D-007](decisions.md)) |
 | 5 | IP del host en `user_LAN` | ✅ `10.10.20.2` |
 | 6 | Función del servidor de logs | ⏳ Propuesta: rsyslog en 514 UDP/TCP ([D-006](decisions.md)) |
 | 7 | IPAM de la VLAN | ✅ **Cerrada.** `whereabouts` para los web y `static` para el admin, probado en [US-19](historias/persona-a.md#us-19) ([D-005](decisions.md)) |
@@ -97,7 +97,7 @@ La versión del enunciado del **5 de noviembre de 2026** y el entorno desplegado
 │   └── netpol.tf               # C (+B): NetworkPolicies
 ├── vnx/
 │   ├── k8s_lab-vms-vlan.xml    # A: escenario adaptado
-│   └── filetree/               # A: configs de MariaDB, authorized_keys, etc.
+│   └── filetree/               # A: configs de MySQL, authorized_keys, etc.
 ├── keys/                       # C: los 2 pares de claves (ignorada por Git)
 ├── scripts/
 │   ├── gen-keys.sh             # C: genera los 2 pares con ssh-keygen
@@ -208,7 +208,7 @@ Escala: 1 = menos de 1 h, 2 = medio día, 3 = 1 día, 5 = 2 a 3 días (incluye i
 | 🤝 Clave pública del par 1 para el `filetree` de los LXC | C → A | Al terminar [US-16](historias/persona-c.md#us-16) |
 | 🤝 Labels de los Pods (`app = web`, `app = admin`) | B, C → C | Al terminar [US-14](historias/persona-b.md#us-14) y [US-17](historias/persona-c.md#us-17) (las usan las NetworkPolicies) |
 | 🔀 Montaje del Secret `ssh-web-authorized` en el Deployment web | C → B | Al terminar [US-17](historias/persona-c.md#us-17) (cambio en `web.tf`) |
-| 🤝 Credenciales e IP de MariaDB | A → B, C | Al terminar [US-20](historias/persona-a.md#us-20) |
+| 🤝 Credenciales e IP de MySQL | A → B, C | Al terminar [US-20](historias/persona-a.md#us-20) |
 
 ---
 

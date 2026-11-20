@@ -33,7 +33,7 @@ Hay **dos pares de claves independientes**, uno por cada relación de confianza:
 | Historia | Quién | Qué usa de US-16 |
 |---|---|---|
 | [US-17](../historias/persona-c.md#us-17) · Pod admin | C | monta `ssh-admin-private` y `ssh-admin-authorized`; monta `ssh-web-authorized` en los web (PR revisado por B) |
-| [US-20](../historias/persona-a.md#us-20) · MariaDB en `bbdd` | A | `vnx/filetree/ssh/authorized_keys` en su `<filetree>` |
+| [US-20](../historias/persona-a.md#us-20) · MySQL en `bbdd` | A | `vnx/filetree/ssh/authorized_keys` en su `<filetree>` |
 | [US-21](../historias/persona-a.md#us-21) · logs en `logs` | A | ídem |
 
 Más adelante: [US-18](../historias/persona-c.md#us-18) prueba host → admin con el par 2, y [US-24](../historias/persona-c.md#us-24) prueba admin → web/LXC con el par 1.
@@ -148,7 +148,7 @@ En cada `<vm>` del XML:
 <filetree seq="on_boot" root="/root/.ssh/" perms="600">filetree/ssh</filetree>
 ```
 - La ruta `filetree/ssh` es relativa a la carpeta del XML (`vnx/`) y se copia **su contenido**.
-- Se usa una subcarpeta (`ssh/`) para que otros ficheros que A ponga en `filetree/` (configuración de MariaDB o rsyslog) no acaben en `.ssh/`.
+- Se usa una subcarpeta (`ssh/`) para que otros ficheros que A ponga en `filetree/` (configuración de MySQL o rsyslog) no acaben en `.ssh/`.
 - Si el usuario de destino no es `root`, cambia `root=` y el usuario tiene que existir en el LXC.
 
 ## 6. Orden del día a día

@@ -12,7 +12,7 @@
 | 📥 Recibes | Datos del entorno: IngressClass, labels del Ingress Controller, IPs ([US-02](persona-a.md#us-02)) | A |
 | 📥 Recibes | Plan de direccionamiento VLAN y NAD ([US-11](persona-a.md#us-11)) | A |
 | 📥 Recibes | Secret con la clave pública del par 1 y su montaje en `web.tf` ([US-16](persona-c.md#us-16), [US-17](persona-c.md#us-17)) | C |
-| 📥 Recibes | IP y credenciales de MariaDB ([US-20](persona-a.md#us-20)) | A |
+| 📥 Recibes | IP y credenciales de MySQL ([US-20](persona-a.md#us-20)) | A |
 | 📤 Entregas | Esqueleto de Terraform, que todos usan ([US-01](#us-01)) | A y C |
 | 📤 Entregas | Label `app = web` de los Pods ([US-14](#us-14)) | C |
 
@@ -27,7 +27,7 @@ Ya no hace falta esperar a nadie para el número de grupo ni las imágenes: el g
 | 1 | [US-14 · Deployment web con página personalizada](#us-14) | 5 | 🤝 | ✅ |
 | 1 | [US-15 · Service ClusterIP e Ingress](#us-15) | 3 | ⚠️ | ✅ |
 | 2 | [US-22 · Interfaz Multus en los Pods web](#us-22) | 3 | 🔀 | ⬜ |
-| 2 | [US-23 · Acceso a MariaDB desde los web y el admin](#us-23) | 3 | 🔀 | ⬜ |
+| 2 | [US-23 · Acceso a MySQL desde los web y el admin](#us-23) | 3 | 🔀 | ⬜ |
 | 3 | [US-31 · Acceso a los web solo desde el Ingress Controller](#us-31) | 5 | | ⬜ |
 | 4 | [US-40 · Script de verificación automática](#us-40) | 5 | 🔵 | ⬜ |
 
@@ -107,10 +107,10 @@ Agregar la anotación `k8s.v1.cni.cncf.io/networks` al template del Deployment, 
 🧪 Los 3 Pods tienen `net1` con IPs **distintas** de la VLAN (aunque estén en workers diferentes) y hacen ping a `bbdd`, `logs` y al admin.
 
 <a id="us-23"></a>
-### 🖥️ US-23 · Acceso a MariaDB desde los web y el admin · 3 pts · 🔀
+### 🖥️ US-23 · Acceso a MySQL desde los web y el admin · 3 pts · 🔀
 **Completed:** ⬜ · **Depende de:** [US-20](persona-a.md#us-20), [US-22](#us-22)
 
-Comprobar si las imágenes traen el cliente (`which mariadb mysql`). El enunciado confirma que `webuser`/`adminuser` pueden instalar paquetes con `sudo apt`, pero eso necesita salida a Internet, que el default-deny egress corta ([D-007](../decisions.md)). Decidir cómo queda instalado de forma reproducible (por ejemplo, en el arranque del contenedor antes de aplicar las políticas, o permitiendo egress solo para eso) y registrarlo en D-007.
+Comprobar si las imágenes traen el cliente (`which mysql`). El enunciado confirma que `webuser`/`adminuser` pueden instalar paquetes con `sudo apt`, pero eso necesita salida a Internet, que el default-deny egress corta ([D-007](../decisions.md)). Decidir cómo queda instalado de forma reproducible (por ejemplo, en el arranque del contenedor antes de aplicar las políticas, o permitiendo egress solo para eso) y registrarlo en D-007.
 
 Guardar las credenciales de la BBDD en un `kubernetes_secret_v1` y exponerlas como variables de entorno.
 

@@ -28,16 +28,17 @@ The topology is in PDF Fig. 1: clients → Ingress → web Service → S1–S3. 
 - `plan.md`: overview, who owns which area, open questions, proposed repo layout (§3), milestones H0–H3, coordination hand-offs, risks.
 - `fases.md`: every user story (US-xx) by phase, with owner, points, dependencies and a **Completed** column.
 - `historias/persona-{a,b,c}.md`: the full stories for each person, with description, files, dependencies and 🧪 acceptance criteria.
-  - A: Red y VNX. VLAN subinterfaces, Multus NAD, VNX scenario, LXC `bbdd` (MariaDB) and `logs`.
+  - A: Red y VNX. VLAN subinterfaces, Multus NAD, VNX scenario, LXC `bbdd` (MySQL, D-012) and `logs`.
   - B: Aplicación web. Terraform skeleton, ConfigMap, web Deployment, ClusterIP Service, Ingress, `scripts/verify.sh`.
   - C: Seguridad. Repo and conventions, SSH keys and Secrets, admin Pod, NodePort Service, NetworkPolicies, final report.
-- `decisions.md`: **the decision log is a required deliverable.** Every design choice or deviation from the PDF needs an entry (D-xxx) that follows the template at the top. Never delete an entry: mark the old one `Superseded by D-xxx`. When you make or propose a design choice, add or update an entry.
+- `decisions.md`: **the decision log is a required deliverable.** Every design choice or deviation from the PDF needs an entry that follows the template at the top, under a `### D-0NN <title>` heading, numbered after the last one. Never delete an entry: mark the old one `Superseded by D-xxx`. When you make or propose a design choice, add or update an entry.
 - `docs/datos-escenario.md`: values measured in the deployed environment (IPs, versions, Multus plugins, Ingress NodePorts, MetalLB state). Values marked 🔁 can change between deployments.
 - `docs/convenciones.md`: git conventions (see below).
 - `ARSN-trabajo-final-26-27.md`: Markdown copy of the PDF spec, easier to search (the PDF still wins).
-- `memoria-draft.md`: the final report draft (US-42), filled in as each story closes.
+- `memoria-draft.md`: the final report draft (US-42), filled in as each story closes. Report material for each phase and person goes in `docs/memoria/fase<N>-<persona>.md`, with screenshots in `docs/memoria/screenshots/us-<NN>-<what>.jpg`.
+- `docs/capturas/us-<NN>-<what>.txt`: the saved command output that shows a story's 🧪 criteria were tested.
 - `docs/ssh-keys.md` (SSH key pairs and where each key goes) and `docs/investigacion-multus.md` (Multus research notes).
-- `docs/useful/{multus,metallb,web}/`: guides, plus the P1.3 YAML in `p13/`, which is reference material for porting to Terraform.
+- `docs/useful/{admin,calico,k8s,metallb,multus,web}/`: guides, plus the P1.3 YAML in `p13/`, which is reference material for porting to Terraform.
 
 To mark a story done (or undo it) in every place it is tracked (`fases.md`, the persona table, and the `**Completed:**` line under the story):
 ```
@@ -47,30 +48,25 @@ python scripts/us-done.py --undo 16
 
 ### Repo state
 
-- `terraform/` is the Trabajo Final working folder. It holds the provider, `variables.tf`, `outputs.tf`, `terraform.tfvars`, and:
-  - `namespace.tf`: the dedicated namespace (`var.namespace`, D-002), used by every resource;
-  - network (A): `multus.tf` (NADs `vlan1000-web`, whereabouts, and `vlan1000-admin`, static; D-005, D-009);
-  - web (B): `web.tf` (ConfigMap rendered from `templates/index.html.tpl` with `templatefile()`), `web-service-deployment.tf` (web Deployment with the page sidecar + `ClusterIP` Service), `ingress.tf` (Ingress → web Service);
-  - SSH (C): `ssh.tf` (the 3 `kubernetes_secret_v1` loaded from `keys/`; `plan` fails with "no file exists" if `scripts/gen-keys.sh` hasn't run);
-  - admin (C): `admin-service-deployment.tf` (Deployment + NodePort Service, first draft).
-  Variables and outputs that no resource uses yet (`host_user_lan_ip`, `worker1_ip`) are commented out in `variables.tf`/`outputs.tf`; uncomment them when the resource that needs them is written. The target per-area file split (`namespace.tf`, `multus.tf`, `web.tf`, `ssh.tf`, `admin.tf`, `netpol.tf`) is in `plan.md` §3. Each person works in their own `.tf` file to avoid conflicts.
-- `terraform/terraform.tfvars` is tracked (`*.tfvars` is commented out in `.gitignore`) and sets `web_num_replicas = 3` (the PDF value). `admin_num_replicas` defaults to 1.
-- `temp-terraform-examples/terraform-k8s-example/` is the team's P1.4 k8s solution (Deployment + Service with locals, deny-all, ingress/egress NetworkPolicies, outputs). **It is the style reference.** `terraform-openstack-example/` is OpenStack and not relevant here.
-- Folders that contain an empty `test.txt` are placeholders. Delete the `test.txt` once the folder has real content (`scripts/test.txt` is now stale; `vnx/filetree/test.txt` is still a placeholder).
-- `scripts/create-keypairs.sh` is the old P1.4 OpenStack script and does not apply; `scripts/gen-keys.sh` replaces it.
-- Planned but not written yet: `scripts/verify.sh`, `vnx/filetree/` content, `README.md`. The LXC scenario is `vnx/vnx-vm-bdd-logs.xml` (one VLAN, D-009).
+- `terraform/` is the Trabajo Final working folder: one Terraform configuration, split into one `.tf` file per area so that each person edits their own file and conflicts are avoided (target split in `plan.md` §3; NetworkPolicies, `netpol.tf`, are not written yet). Every resource goes in the dedicated namespace (`var.namespace`, D-002).
+  - `ssh.tf` loads the Secrets from `keys/` with `file()`, so `plan` fails with "no file exists" until `scripts/gen-keys.sh` has run that day.
+  - Variables and outputs that no resource uses yet (`host_user_lan_ip`, `worker1_ip`) are commented out in `variables.tf`/`outputs.tf`; uncomment them when the resource that needs them is written.
+  - `terraform.tfvars` is tracked (`*.tfvars` is commented out in `.gitignore`) and sets `web_num_replicas = 3` (the PDF value).
+- `temp-terraform-examples/terraform-k8s-example/` is the team's P1.4 k8s solution. **It is the style reference.** `terraform-openstack-example/` is OpenStack and not relevant here.
+- The LXC scenario is `vnx/vnx-vm-bdd-logs.xml` (one VLAN, D-010); the configs it copies with `filetree` are in `vnx/filetree/{bbdd,logs}/`.
+- Planned but not written yet: `scripts/verify.sh`, `README.md`.
 - Before creating or copying `.tf` files into a new working folder, ask the user.
 
 ## What has to be deployed
 
 Full requirements: PDF §2–§5. Stories: `historias/`.
-- **Web**: a Deployment with 3 replicas of `dgsgiros/nginx-ssh:latest` (user `webuser`, GID 1000). `index.html` comes from a ConfigMap template, and a sidecar container (D-009, proposed; supersedes the initContainer of D-003) writes the Pod name into it, in a shared `emptyDir`.
+- **Web**: a Deployment with 3 replicas of `dgsgiros/nginx-ssh:latest` (user `webuser`, GID 1000). `index.html` comes from a ConfigMap template, and a sidecar container (D-009; supersedes the initContainer of D-003) writes the Pod name into it, in a shared `emptyDir`.
 - **Admin**: one Pod of `dgsgiros/admin-ssh:latest` (user `adminuser`, GID 1000), with `fsGroup: 1000` and a `nodeSelector` of `kubernetes.io/hostname=k8s-worker1`.
 - **Namespace**: a dedicated one, `var.namespace` (D-002), not `default`.
 - **VLAN**:
   - Pods get an extra interface (`net1`) through a Multus `NetworkAttachmentDefinition`, created with `kubernetes_manifest` because the provider has no native resource for it. The plan is `macvlan` bridge on `e2.<vlan>`.
   - The workers need `e2.<vlan>` subinterfaces. The interface is **`e2`**, not `eth2`, and it is on the OVS net `VlanNet`.
-  - The LXC `bbdd` (MariaDB) and `logs` (rsyslog on 514, D-006) live in a separate VNX XML based on `k8s_lab-vms-vlan.xml` from P1.3. It uses `exec` steps to install packages and `filetree` for configs and `authorized_keys`.
+  - The LXC `bbdd` (MySQL 8.0, D-012; its config drop-in goes to `/etc/mysql/mysql.conf.d/`, not the MariaDB path) and `logs` (rsyslog on 514, D-006) live in a separate VNX XML based on `k8s_lab-vms-vlan.xml` from P1.3. It uses `exec` steps to install packages and `filetree` for configs and `authorized_keys`.
   - VLAN 1000, subnet `10.1.2.0/24` (D-009). IPAM: `whereabouts` for the web Pods, installed on every start-up by `scripts/setup-whereabouts.sh` (D-010), and `static` for the admin (D-005). NADs: `vlan1000-web` and `vlan1000-admin`.
 - **SSH (keys only, D-004)**: two pairs, generated each day by `ssh-keygen` into the git-ignored `keys/` and loaded with `file()` into three `kubernetes_secret_v1` (never `kubectl create secret`):
   - `ssh-admin-private`: the pair 1 private key, for the admin Pod;
@@ -151,5 +147,5 @@ Terraform loads **every `.tf` in the folder** as one configuration, so never mix
 - The web NetworkPolicy port is the **Pod** port 80, not the Service port 8080. When a peer combines namespaceSelector and podSelector, both must be in the **same** `from` block (AND), not separate ones (OR).
 - NetworkPolicy can't match ICMP. A rule with no `ports` allows every protocol.
 - With default-deny egress, Pods lose DNS unless egress to `kube-dns` on 53/UDP+TCP is allowed (the pattern is in `temp-terraform-examples/terraform-k8s-example/network-policy-egress-tcp-tester.tf`).
-- Installing a MariaDB client with apt needs Internet egress, which deny-all blocks (D-007).
+- Installing a MySQL client with apt needs Internet egress, which deny-all blocks (D-007).
 - Secret data ends up in the tfstate, which is another reason to keep the state out of git.

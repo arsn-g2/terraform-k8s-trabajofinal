@@ -2,7 +2,7 @@
 
 ⬅️ [Volver al plan](../plan.md) · Otras personas: [🖥️ B](persona-b.md) · [🔐 C](persona-c.md) · [🔖 Leyenda de emojis](../plan.md#leyenda)
 
-**Área:** subinterfaces VLAN en los workers, Multus (`NetworkAttachmentDefinition`), escenario VNX, LXC de MariaDB y del servidor de logs.
+**Área:** subinterfaces VLAN en los workers, Multus (`NetworkAttachmentDefinition`), escenario VNX, LXC de MySQL y del servidor de logs.
 **Carga:** 30 puntos · **Archivos:** `terraform/multus.tf`, `vnx/`, `scripts/setup-vlan-workers.sh`, `docs/datos-escenario.md`
 
 ## 🤝 Dependencias con el equipo
@@ -13,7 +13,7 @@
 | 📥 Recibes | Clave pública del **par 1** (admin → web/LXC) para el `filetree` ([US-16](persona-c.md#us-16)) | C |
 | 📤 Entregas | Datos del entorno ([US-02](#us-02)) | B y C |
 | 📤 Entregas | Plan de direccionamiento VLAN ([US-11](#us-11)) | B y C |
-| 📤 Entregas | IP y credenciales de MariaDB ([US-20](#us-20)) | B y C |
+| 📤 Entregas | IP y credenciales de MySQL ([US-20](#us-20)) | B y C |
 
 ## 📋 Orden de trabajo
 
@@ -24,7 +24,7 @@
 | 1 | [US-10 · Subinterfaces VLAN en los workers](#us-10) | 3 | | ✅ |
 | 1 | [US-11 · NetworkAttachmentDefinition](#us-11) | 3 | ⛔ 🤝 | ✅ |
 | 1 | [US-12 · Escenario VNX con LXC](#us-12) | 5 | | ✅ |
-| 2 | [US-20 · MariaDB en el LXC `bbdd`](#us-20) | 5 | 🤝 🔀 | ⬜ |
+| 2 | [US-20 · MySQL en el LXC `bbdd`](#us-20) | 5 | 🤝 🔀 | ⬜ |
 | 2 | [US-21 · Servidor de logs](#us-21) | 3 | | ⬜ |
 | 3 | [US-33 · Validar el tráfico de la VLAN con las políticas](#us-33) | 3 | 🔀 | ⬜ |
 | 4 | [US-41 · Despliegue de cero, de punta a punta](#us-41) | 3 | 🔀 🏁 | ⬜ |
@@ -157,12 +157,12 @@ Copiar `../../k8s_lab-vms-vlan.xml` (práctica 1.3) a `vnx/` y dejar dos contene
 ## 🔀 Fase 2: Integración por la VLAN
 
 <a id="us-20"></a>
-### 🌐 US-20 · MariaDB en el LXC `bbdd` · 5 pts · 🤝 🔀
+### 🌐 US-20 · MySQL en el LXC `bbdd` · 5 pts · 🤝 🔀
 **Completed:** ⬜ · **Depende de:** [US-12](#us-12), [US-16](persona-c.md#us-16) · **Bloquea a:** [US-23](persona-b.md#us-23), [US-24](persona-c.md#us-24)
 
 En el XML de VNX (enunciado §2.6):
-- `<exec>` que instale `mariadb-server` y `openssh-server` y los habilite;
-- `<filetree>` que copie la config de MariaDB (`bind-address` = IP de la VLAN, o `0.0.0.0`), un script SQL que cree una base de datos de prueba y un usuario con acceso desde la subred de la VLAN (`'usuario'@'<subred>.%'`), y el `authorized_keys` con la **clave pública del par 1** que te pasa C en [US-16](persona-c.md#us-16).
+- `<exec>` que instale `mysql-server` y `openssh-server` y los habilite;
+- `<filetree>` que copie la config de MySQL (`bind-address` = IP de la VLAN, o `0.0.0.0`), un script SQL que cree una base de datos de prueba y un usuario con acceso desde la subred de la VLAN (`'usuario'@'<subred>.%'`), y el `authorized_keys` con la **clave pública del par 1** que te pasa C en [US-16](persona-c.md#us-16).
 
 🤝 Pasar a B y C la IP, el usuario, la contraseña y el nombre de la BBDD (por un canal privado, no en Git).
 
@@ -187,7 +187,7 @@ Instalar SSH con el mismo `authorized_keys` (par 1) y el servicio de logs de [D-
 **Completed:** ⬜ · **Depende de:** [US-30](persona-c.md#us-30), [US-24](persona-c.md#us-24)
 
 ⚠️ Calico aplica las NetworkPolicies solo a la interfaz que gestiona (`eth0` del Pod), no a las interfaces Multus (`net1`). Comprobarlo:
-- si el SSH y MariaDB por la VLAN siguen funcionando con default-deny, documentarlo como hallazgo en la memoria;
+- si el SSH y MySQL por la VLAN siguen funcionando con default-deny, documentarlo como hallazgo en la memoria;
 - si no funcionan, agregar las reglas de egress/ingress necesarias con `ip_block` de la subred VLAN (coordinar con C, porque es su `netpol.tf`).
 
 ⚠️ Revisar también el **DNS**: el egress denegado rompe la resolución de nombres. Si algo depende de DNS, agregar egress a `kube-dns` (UDP/TCP 53).

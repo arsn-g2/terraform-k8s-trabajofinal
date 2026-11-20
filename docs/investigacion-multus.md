@@ -251,8 +251,8 @@ El TTL también muestra que las dos redes funcionan distinto:
 
 **Conclusión.**
 - Calico aplica las NetworkPolicies **solo a `eth0`**, la interfaz que gestiona (sus reglas van en las `caliXXXX` del nodo). El tráfico de `net1` (macvlan sobre `e2.1000`) **no pasa por esas reglas**.
-- Con las políticas del enunciado (§5) activas, el SSH del admin a los web y a los LXC y el acceso a MariaDB por la VLAN **seguirán funcionando sin reglas extra**.
-- ⚠️ Consecuencia para la memoria: las NetworkPolicies **no protegen la VLAN**. Allí la seguridad depende de las claves SSH y de los usuarios de MariaDB. Filtrar `net1` necesitaría otro mecanismo (por ejemplo, `MultiNetworkPolicy` o reglas en los propios Pods), que el enunciado no pide.
+- Con las políticas del enunciado (§5) activas, el SSH del admin a los web y a los LXC y el acceso a MySQL por la VLAN **seguirán funcionando sin reglas extra**.
+- ⚠️ Consecuencia para la memoria: las NetworkPolicies **no protegen la VLAN**. Allí la seguridad depende de las claves SSH y de los usuarios de MySQL. Filtrar `net1` necesitaría otro mecanismo (por ejemplo, `MultiNetworkPolicy` o reglas en los propios Pods), que el enunciado no pide.
 
 ---
 
