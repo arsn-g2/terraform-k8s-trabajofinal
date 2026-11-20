@@ -11,8 +11,8 @@ Datos medidos en el entorno desplegado el **13/11/2026**. El entorno se crea **d
 En el host del laboratorio:
 
 ```bash
-/lab/cnvr/bin/get-k8s-calico                       # descarga el escenario en /mnt/tmp/k8s_lab-calico-v02
-cd /mnt/tmp/k8s_lab-calico-v02
+/lab/cnvr/bin/get-k8s-calico                       # descarga el escenario en /mnt/tmp/k8s_lab-calico-v03
+cd /mnt/tmp/k8s_lab-calico-v03
 ./bin/start-k8s-calico                             # crea el clúster, une los workers e intenta cargar MetalLB
 sudo vnx -f k8s_lab-calico.xml -x config_metallb   # relanzar (ver §6)
 kubectl get ipaddresspools -n metallb-system       # debe mostrar el pool
@@ -21,11 +21,11 @@ sudo vnx -f k8s_lab-terraform.xml -x install-terraform
 ./bin/get-master-kubeconf                          # kubeconfig → ~/.kube/config del host
 ./bin/set-terraform-kubeconf                       # kubeconfig → VM terraform
 
-cd /mnt/tmp/k8s_lab-calico-v02/shared/
+cd /mnt/tmp/k8s_lab-calico-v03/shared/
 git clone https://github.com/arsn-g2/terraform-k8s-trabajofinal.git
-cd /mnt/tmp/k8s_lab-calico-v02/
+cd /mnt/tmp/k8s_lab-calico-v03/
 code .
-cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal
+cd /mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal
 chmod +x scripts/*
 # claves SSH del día (US-16): antes de crear los LXC y de terraform apply
 ./scripts/gen-keys.sh
@@ -35,7 +35,7 @@ chmod +x scripts/*
 
 
 # start the vnx infra: bbdd, logs servers
-cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal/vnx
+cd /mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx
 sudo vnx -f vnx-vm-bdd-logs.xml --create
 
 
@@ -182,7 +182,7 @@ El nombre, el offset de MACs y la red de gestión tienen que ser distintos de lo
 Arranque y parada (el clúster tiene que estar levantado antes, porque crea `VlanNet`: en este XML tiene `managed="no"`):
 
 ```bash
-cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal
+cd /mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal
 ./scripts/setup-vlan-workers.sh              # e2.1000 en los workers
 sudo vnx -f vnx/vnx-vm-bdd-logs.xml --create
 sudo ovs-vsctl show                          # puertos de VlanNet y su tag (bbdd-e1 y logs-e1 con tag 1000)

@@ -1,7 +1,7 @@
 TERRAFORM LAB k8s
 
 /lab/cnvr/bin/get-k8s-calico
-cd /mnt/tmp/k8s_lab-calico-v02
+cd /mnt/tmp/k8s_lab-calico-v03
 ./bin/start-k8s-calico
 sudo vnx -f k8s_lab-terraform.xml --create
 sudo vnx -f k8s_lab-terraform.xml -x install-terraform
@@ -10,14 +10,14 @@ sudo vnx -f k8s_lab-terraform.xml -x install-terraform
 sudo vnx -f k8s_lab-calico.xml -x config_metallb
 
 
-cd /mnt/tmp/k8s_lab-calico-v02/shared/
+cd /mnt/tmp/k8s_lab-calico-v03/shared/
 git clone https://github.com/arsn-g2/terraform-k8s-trabajofinal.git
 
 
-cd /mnt/tmp/k8s_lab-calico-v02/
+cd /mnt/tmp/k8s_lab-calico-v03/
 code .
 
-cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal
+cd /mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal
 chmod +x scripts/*
 # claves SSH del día (US-16): antes de crear los LXC y de terraform apply
 ./scripts/gen-keys.sh
@@ -27,5 +27,5 @@ chmod +x scripts/*
 
 
 # start the vnx infra: bbdd, logs servers
-cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal/vnx
+cd /mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx
 sudo vnx -f vnx-vm-bdd-logs.xml --create

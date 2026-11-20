@@ -8,7 +8,7 @@
 
 **Decisiones de diseño:** [decisions.md](decisions.md) (entregable obligatorio: toda adaptación del enunciado lleva su entrada).
 
-**Entorno:** escenario `k8s_lab-calico` en `/mnt/tmp/k8s_lab-calico-v02` y VM `terraform`, donde se corre Terraform. Cómo levantarlo y datos medidos: [US-02](historias/persona-a.md#us-02).
+**Entorno:** escenario `k8s_lab-calico` en `/mnt/tmp/k8s_lab-calico-v03` y VM `terraform`, donde se corre Terraform. Cómo levantarlo y datos medidos: [US-02](historias/persona-a.md#us-02).
 
 🧭 **Fases y dependencias, historia por historia:** [fases.md](fases.md)
 

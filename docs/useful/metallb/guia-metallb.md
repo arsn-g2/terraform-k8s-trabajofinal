@@ -29,7 +29,7 @@ Hacen falta **dos objetos de configuración** en `metallb-system`: un `IPAddress
 ### 2.1 Configuración: la misma que hoy
 
 Comparando los dos escenarios, la parte de MetalLB es **idéntica**:
-- `conf/k8s/metallb/` tiene los mismos tres ficheros en `k8s_lab-flannel-v02` y en `k8s_lab-calico-v02`;
+- `conf/k8s/metallb/` tiene los mismos tres ficheros en `k8s_lab-flannel-v02` y en `k8s_lab-calico-v03`;
 - en los dos XML, `k8s-master` recibe por `filetree` **solo** `metallb-config.yaml` (en `/root/k8s/`), y el `<exec seq="config_metallb">` hace lo mismo:
 
 ```bash

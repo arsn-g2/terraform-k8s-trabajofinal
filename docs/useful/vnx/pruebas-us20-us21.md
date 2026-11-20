@@ -18,7 +18,7 @@ k8s-worker1           k8s-worker2              bbdd (eth1)                logs (
 
 ## 0. Preparación
 
-Todo desde el **host**, en `/mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal`. Valores que usamos:
+Todo desde el **host**, en `/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal`. Valores que usamos:
 
 | Valor | De dónde sale |
 |---|---|

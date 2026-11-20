@@ -40,8 +40,8 @@
 **Cómo se levanta el entorno** (en el host del laboratorio). El entorno es **temporal y se crea de cero cada día de trabajo**; lo único que persiste es este repo:
 
 ```bash
-/lab/cnvr/bin/get-k8s-calico                       # descarga el escenario en /mnt/tmp/k8s_lab-calico-v02
-cd /mnt/tmp/k8s_lab-calico-v02
+/lab/cnvr/bin/get-k8s-calico                       # descarga el escenario en /mnt/tmp/k8s_lab-calico-v03
+cd /mnt/tmp/k8s_lab-calico-v03
 ./bin/start-k8s-calico                             # crea el clúster, une los workers e intenta cargar MetalLB
 sudo vnx -f k8s_lab-calico.xml -x config_metallb   # relanzar: a veces start-k8s-calico no deja el pool creado
 kubectl get ipaddresspools -n metallb-system       # debe mostrar el pool 10.10.10.20-30

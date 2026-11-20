@@ -43,7 +43,7 @@ Más adelante: [US-18](../historias/persona-c.md#us-18) prueba host → admin co
 Se ejecuta **en el host**, **sin `sudo`**, **cada día**, **antes** de `terraform apply` y de `vnx --create` de los LXC:
 
 ```bash
-cd /mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal
+cd /mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal
 ./scripts/gen-keys.sh
 ```
 
@@ -166,7 +166,7 @@ Pruebas para confirmar que US-16 está desplegada y funciona. Cubren **solo** lo
 
 Variables usadas en los comandos:
 ```bash
-REPO=/mnt/tmp/k8s_lab-calico-v02/shared/terraform-k8s-trabajofinal   # en el host
+REPO=/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal   # en el host
 NS=g2-workshop                                                       # var.namespace
 ```
 

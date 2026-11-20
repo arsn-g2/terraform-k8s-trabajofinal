@@ -18,7 +18,7 @@ Pruebas hechas con `kubectl` (no con Terraform) en el namespace `multus-poc`, qu
 
 | Dato | Valor |
 |---|---|
-| Clúster | `k8s_lab-calico-v02`: Kubernetes v1.37, Calico con IPIP, red de Pods `172.16.0.0/16` |
+| Clúster | `k8s_lab-calico-v03`: Kubernetes v1.37, Calico con IPIP, red de Pods `172.16.0.0/16` |
 | Multus | Instalado en modo *thick*: `kube-multus-ds` en `Running` en los 3 nodos. El CRD `network-attachment-definitions.k8s.cni.cncf.io` existe |
 | Interfaz de los workers hacia `VlanNet` | `e2`, UP y **sin IPv4** en los dos workers (solo la IPv6 de enlace local `fe80::…`) |
 | Destinos en la VLAN | [`vnx/vnx-vlan.xml`](../vnx/vnx-vlan.xml) y [`vnx/vnx-vm-bdd-logs.xml`](../vnx/vnx-vm-bdd-logs.xml), **desplegados por primera vez sin errores** ([US-12](../historias/persona-a.md#us-12)): `bbdd` `10.1.2.100` (VLAN 1000), `logs` `10.1.3.100` (VLAN 1001), `vlan-router` `10.1.2.1` / `10.1.3.1` |
