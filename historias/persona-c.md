@@ -27,6 +27,8 @@
 | 1 | [US-16 · Claves SSH y Secrets](#us-16) | 3 | 🤝 | ✅ |
 | 1 | [US-17 · Pod de administración](#us-17) | 5 | 🔀 | ✅ |
 | 1 | [US-18 · Service NodePort del admin](#us-18) | 3 | | ✅ |
+| 2 | [US-24 · SSH desde el admin por la VLAN](#us-24) | 5 | 🔀 | ⬜ |
+| 3 | [US-30 · Política de denegación por defecto](#us-30) | 3 | ⛔ | ✅ |
 | 2 | [US-24 · SSH desde el admin por la VLAN](#us-24) | 5 | 🔀 | ✅ |
 | 3 | [US-30 · Política de denegación por defecto](#us-30) | 3 | ⛔ | ⬜ |
 | 3 | [US-32 · SSH al admin solo desde la IP del host](#us-32) | 5 | ⚠️ | ⬜ |
@@ -137,7 +139,7 @@ Agregar la interfaz Multus al admin (IP fija, IPAM `static`). Probar SSH con la 
 
 <a id="us-30"></a>
 ### 🛡️ US-30 · Política de denegación por defecto · 3 pts · ⛔
-**Completed:** ⬜ · **Depende de:** Fase 2 completa ([H2](../plan.md#hitos)) · **Bloquea a:** [US-31](persona-b.md#us-31), [US-32](#us-32), [US-33](persona-a.md#us-33)
+**Completed:** ✅ · **Depende de:** Fase 2 completa ([H2](../plan.md#hitos)) · **Bloquea a:** [US-31](persona-b.md#us-31), [US-32](#us-32), [US-33](persona-a.md#us-33)
 
 En `netpol.tf`, crear `kubernetes_network_policy_v1` en el namespace del proyecto con `pod_selector {}` y `policy_types = ["Ingress", "Egress"]`, sin reglas (enunciado §5.1).
 
