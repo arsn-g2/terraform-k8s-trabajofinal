@@ -75,8 +75,10 @@ Según la salida de `adm id`, define **una** de estas dos:
 # si sale uid=1000(adminuser):
 ssh_adm() { adm $SSH "$@"; }
 # si sale uid=0(root):
-ssh_adm() { adm su adminuser -s /bin/sh -c "$SSH $*"; }
+ssh_adm() { adm su adminuser -s /bin/sh -c "$SSH $(printf '%q ' "$@")"; }
 ```
+
+> El `printf '%q '` vuelve a poner comillas a cada argumento. Con `$*` a secas se pierden: `'hostname; id -un'` llegaría como `hostname; id -un` y el `;` haría que `id -un` se ejecutara **en el admin** (saldría `adminuser`) y no en el destino.
 
 > **Por qué estas opciones de `ssh`:**
 > - `BatchMode=yes`: si la clave no vale, `ssh` **falla** en vez de pedir contraseña. Así la prueba demuestra el "sin contraseña" del criterio.

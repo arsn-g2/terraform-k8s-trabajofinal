@@ -1,0 +1,188 @@
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ NS=g2-workshop
+ADMIN=$(kubectl get pod -n $NS -l app=admin -o jsonpath='{.items[0].metadata.name}'); echo $ADMIN
+admin-deployment-bf98c569-cpqwl
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get pods -n $NS
+NAME                               READY   STATUS    RESTARTS   AGE
+admin-deployment-bf98c569-cpqwl    1/1     Running   0          2m41s
+nginx-deployment-9586d84fd-8846v   2/2     Running   0          2m41s
+nginx-deployment-9586d84fd-hswbq   2/2     Running   0          2m40s
+nginx-deployment-9586d84fd-q7skg   2/2     Running   0          2m40s
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ adm() { kubectl exec -n $NS "$ADMIN" -c admin-server -- "$@"; }
+SSH='ssh -i /home/adminuser/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+adm id
+uid=0(root) gid=0(root) groups=0(root),1000(adminuser)
+
+
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get net-attach-def -n $NS
+NAME             AGE
+vlan1000-admin   4m14s
+vlan1000-web     4m15s
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get net-attach-def -n $NS
+kubectl get net-attach-def vlan1000-admin -n $NS -o jsonpath='{.spec.config}{"\n"}'
+NAME             AGE
+vlan1000-admin   25m
+vlan1000-web     25m
+{"capabilities":{"ips":true},"cniVersion":"0.3.1","ipam":{"type":"static"},"master":"e2.1000","mode":"bridge","type":"macvlan"}
+
+
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get pod -n $NS -l app=admin -o wide
+NAME                              READY   STATUS    RESTARTS   AGE   IP              NODE          NOMINATED NODE   READINESS GATES
+admin-deployment-bf98c569-cpqwl   1/1     Running   0          29m   172.16.194.69   k8s-worker1   <none>           <none>
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get pod $ADMIN -n $NS -o jsonpath='{.metadata.annotations.k8s\.v1\.cni\.cncf\.io/network-status}{"\n"}'
+[{
+    "name": "k8s-pod-network",
+    "interface": "eth0",
+    "ips": [
+        "172.16.194.69"
+    ],
+    "mac": "7a:2d:39:3a:ee:5a",
+    "default": true,
+    "dns": {}
+},{
+    "name": "g2-workshop/vlan1000-admin",
+    "interface": "net1",
+    "ips": [
+        "10.1.2.5"
+    ],
+    "mac": "b6:44:26:71:f0:22",
+    "dns": {}
+}]
+
+
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ adm ip -4 addr show net1
+4: net1@if13: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000 link-netnsid 0
+    inet 10.1.2.5/24 brd 10.1.2.255 scope global net1
+       valid_lft forever preferred_lft forever
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ adm ip -d link show net1 | grep macvlan
+    macvlan mode bridge bcqueuelen 1000 usedbcqueuelen 1000 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ adm ip route
+default via 169.254.1.1 dev eth0 
+10.1.2.0/24 dev net1 proto kernel scope link src 10.1.2.5 
+169.254.1.1 dev eth0 scope link 
+
+
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ for p in $(kubectl get pods -n $NS -l app=web -o jsonpath='{.items[*].metadata.name}'); do
+  echo "$p  $(kubectl exec -n $NS $p -c nginx-server -- ip -4 -o addr show net1 | awk '{print $4}')"
+done
+nginx-deployment-9586d84fd-8846v  10.1.2.12/24
+nginx-deployment-9586d84fd-hswbq  10.1.2.10/24
+nginx-deployment-9586d84fd-q7skg  10.1.2.11/24
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ WEB_IPS="10.1.2.1x 10.1.2.1y 10.1.2.1z"
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ WEB=$(kubectl get pod -n $NS -l app=web -o jsonpath='{.items[0].metadata.name}')
+kubectl exec -n $NS $WEB -c nginx-server -- ping -c2 10.1.2.5
+PING 10.1.2.5 (10.1.2.5) 56(84) bytes of data.
+64 bytes from 10.1.2.5: icmp_seq=1 ttl=64 time=1.36 ms
+64 bytes from 10.1.2.5: icmp_seq=2 ttl=64 time=0.864 ms
+
+--- 10.1.2.5 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1002ms
+rtt min/avg/max/mdev = 0.864/1.110/1.356/0.246 ms
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ adm ping -c2 10.1.2.100
+PING 10.1.2.100 (10.1.2.100) 56(84) bytes of data.
+64 bytes from 10.1.2.100: icmp_seq=1 ttl=64 time=1.07 ms
+64 bytes from 10.1.2.100: icmp_seq=2 ttl=64 time=0.574 ms
+
+--- 10.1.2.100 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 0.574/0.824/1.074/0.250 ms
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ adm ping -c2 10.1.2.101
+PING 10.1.2.101 (10.1.2.101) 56(84) bytes of data.
+64 bytes from 10.1.2.101: icmp_seq=1 ttl=64 time=0.943 ms
+64 bytes from 10.1.2.101: icmp_seq=2 ttl=64 time=0.232 ms
+
+--- 10.1.2.101 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 0.232/0.587/0.943/0.355 ms
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ 
+
+WEB_IPS="10.1.2.12 10.1.2.10 10.1.2.11"
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ ssh_adm() { adm su adminuser -s /bin/sh -c "$SSH $(printf '%q ' "$@")"; }
+WEB_IPS="10.1.2.10 10.1.2.11 10.1.2.12"
+for ip in $WEB_IPS; do echo "### admin -> webuser@$ip"; ssh_adm webuser@$ip 'hostname; id -un'; done
+### admin -> webuser@10.1.2.10
+Warning: Permanently added '10.1.2.10' (ED25519) to the list of known hosts.
+nginx-deployment-9586d84fd-hswbq
+webuser
+### admin -> webuser@10.1.2.11
+Warning: Permanently added '10.1.2.11' (ED25519) to the list of known hosts.
+nginx-deployment-9586d84fd-q7skg
+webuser
+### admin -> webuser@10.1.2.12
+Warning: Permanently added '10.1.2.12' (ED25519) to the list of known hosts.
+nginx-deployment-9586d84fd-8846v
+webuser
+
+
+
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ for ip in 10.1.2.100 10.1.2.101; do echo "### admin -> root@$ip"; ssh_adm root@$ip 'hostname; id -un'; done
+### admin -> root@10.1.2.100
+Warning: Permanently added '10.1.2.100' (ED25519) to the list of known hosts.
+bbdd
+root
+### admin -> root@10.1.2.101
+Warning: Permanently added '10.1.2.101' (ED25519) to the list of known hosts.
+logs
+root
+
+
+
+$ kubectl get pods -n $NS -l app=web -o wide
+NAME                               READY   STATUS    RESTARTS   AGE   IP              NODE          NOMINATED NODE   READINESS GATES
+nginx-deployment-9586d84fd-8846v   2/2     Running   0          44m   172.16.126.2    k8s-worker2   <none>           <none>
+nginx-deployment-9586d84fd-hswbq   2/2     Running   0          44m   172.16.126.1    k8s-worker2   <none>           <none>
+nginx-deployment-9586d84fd-q7skg   2/2     Running   0          44m   172.16.194.70   k8s-worker1   <none>           <none>
+
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ ssh_adm webuser@172.16.126.2 hostname
+Warning: Permanently added '172.16.126.2' (ED25519) to the list of known hosts.
+nginx-deployment-9586d84fd-8846v
+
+
+
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl rollout restart deployment/admin-deployment -n $NS
+kubectl get pods -n $NS -l app=admin -w
+deployment.apps/admin-deployment restarted
+NAME                              READY   STATUS    RESTARTS   AGE
+admin-deployment-bf98c569-cpqwl   1/1     Running   0          49m
+admin-deployment-bf98c569-cpqwl   1/1     Terminating   0          49m
+admin-deployment-bf98c569-cpqwl   1/1     Terminating   0          49m
+admin-deployment-bf98c569-cpqwl   1/1     Terminating   0          49m
+admin-deployment-bf98c569-cpqwl   0/1     Completed     0          49m
+admin-deployment-5d65b74f7b-mcwz8   0/1     Pending       0          0s
+admin-deployment-bf98c569-cpqwl     0/1     Completed     0          49m
+admin-deployment-5d65b74f7b-mcwz8   0/1     Pending       0          1s
+admin-deployment-bf98c569-cpqwl     0/1     Completed     0          49m
+admin-deployment-5d65b74f7b-mcwz8   0/1     ContainerCreating   0          1s
+admin-deployment-5d65b74f7b-mcwz8   0/1     ContainerCreating   0          5s
+admin-deployment-5d65b74f7b-mcwz8   0/1     ContainerCreating   0          6s
+admin-deployment-5d65b74f7b-mcwz8   0/1     ContainerCreating   0          7s
+admin-deployment-5d65b74f7b-mcwz8   1/1     Running             0          10s
+^C(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get pods -n $NS -l app=admin -w
+NAME                                READY   STATUS    RESTARTS   AGE
+admin-deployment-5d65b74f7b-mcwz8   1/1     Running   0          76s
+^Z
+[1]+  Detenido                kubectl get pods -n $NS -l app=admin -w
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get pods -n $NS -l app=admin -o wide
+NAME                                READY   STATUS    RESTARTS   AGE   IP              NODE          NOMINATED NODE   READINESS GATES
+admin-deployment-5d65b74f7b-mcwz8   1/1     Running   0          83s   172.16.194.71   k8s-worker1   <none>           <none>
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ ADMIN=$(kubectl get pod -n $NS -l app=admin -o jsonpath='{.items[0].metadata.name}'); echo $ADMIN
+admin-deployment-5d65b74f7b-mcwz8
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ kubectl get pod $ADMIN -n $NS -o jsonpath='{.metadata.annotations.k8s\.v1\.cni\.cncf\.io/network-status}{"\n"}'
+[{
+    "name": "k8s-pod-network",
+    "interface": "eth0",
+    "ips": [
+        "172.16.194.71"
+    ],
+    "mac": "76:ce:ca:3b:76:7e",
+    "default": true,
+    "dns": {}
+},{
+    "name": "g2-workshop/vlan1000-admin",
+    "interface": "net1",
+    "ips": [
+        "10.1.2.5"
+    ],
+    "mac": "86:cb:b4:44:83:18",
+    "dns": {}
+}]
