@@ -1,0 +1,18 @@
+[{
+    "name": "k8s-pod-network",
+    "interface": "eth0",
+    "ips": [
+        "172.16.194.69"
+    ],
+    "mac": "ca:92:a7:84:6d:a5",
+    "default": true,
+    "dns": {}
+},{
+    "name": "g2-workshop/vlan1000-admin",
+    "interface": "net1",
+    "ips": [
+        "10.1.2.5"
+    ],
+    "mac": "fa:3c:66:22:14:e4",
+    "dns": {}
+}]
