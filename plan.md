@@ -84,25 +84,36 @@ La versión del enunciado del **5 de noviembre de 2026** y el entorno desplegado
 │   ├── persona-b.md
 │   └── persona-c.md
 ├── README.md                   # cómo desplegar de cero (US-42)
-├── terraform/
-│   ├── providers.tf            # B: provider kubernetes (+ tls/local si se usan)
+├── terraform/                  # configuración principal (se aplica primero)
+│   ├── k8s-provider.tf         # B: provider kubernetes 2.23.0
 │   ├── variables.tf            # B: group_number, namespace, IPs, imágenes, VLAN
-│   ├── terraform.tfvars.example
-│   ├── outputs.tf              # B: IPs, nodePort, URL del Ingress
+│   ├── terraform.tfvars        # B: valores (versionado; web_num_replicas = 3)
+│   ├── outputs.tf              # B: IPs, nodePort, URL del Ingress; también los lee network-policies/
 │   ├── namespace.tf            # B
-│   ├── multus.tf               # A: NetworkAttachmentDefinition
-│   ├── web.tf                  # B: ConfigMap, Deployment, Service, Ingress
+│   ├── multus.tf               # A: NetworkAttachmentDefinitions (web y admin)
+│   ├── web.tf                  # B: ConfigMap con la plantilla de index.html
+│   ├── web-service-deployment.tf # B: Deployment web (con sidecar) y Service ClusterIP
+│   ├── ingress.tf              # B: Ingress /servers-G2
 │   ├── ssh.tf                  # C: 3 Secrets SSH (kubernetes_secret_v1)
-│   ├── admin.tf                # C: Pod/Deployment admin y Service NodePort
-│   └── netpol.tf               # C (+B): NetworkPolicies
+│   ├── admin-service-deployment.tf # C: Deployment admin y Service NodePort
+│   ├── templates/index.html.tpl
+│   └── network-policies/       # segunda configuración, se aplica después (D-013)
+│       ├── k8s-provider.tf     # C: provider propio, state propio
+│       ├── env-outputs.tf      # C: lee los outputs de terraform/ (local.env)
+│       ├── network-policy-deny-all.tf   # C: US-30
+│       ├── network-policy-web-ingress.tf # B: US-31 (pendiente)
+│       └── network-policy-admin-ssh.tf  # C: US-32 (pendiente)
 ├── vnx/
-│   ├── k8s_lab-vms-vlan.xml    # A: escenario adaptado
-│   └── filetree/               # A: configs de MySQL, authorized_keys, etc.
+│   ├── vnx-vm-bdd-logs.xml     # A: LXC bbdd y logs en la VLAN 1000 (D-010)
+│   └── filetree/               # A: configs de MySQL y rsyslog (bbdd/, logs/); ssh/ lo genera gen-keys.sh
 ├── keys/                       # C: los 2 pares de claves (ignorada por Git)
 ├── scripts/
+│   ├── host-script.sh          # arranque diario completo en el host, incluidos los dos apply
 │   ├── gen-keys.sh             # C: genera los 2 pares con ssh-keygen
 │   ├── setup-vlan-workers.sh   # A: subinterfaces e2.<vlan> en los workers
-│   └── verify.sh               # B: pruebas automáticas
+│   ├── setup-whereabouts.sh    # A: instala el IPAM whereabouts (D-011)
+│   ├── us-done.py              # marca una historia como completada
+│   └── verify.sh               # B: pruebas automáticas (pendiente)
 └── docs/
     ├── convenciones.md
     ├── datos-escenario.md      # A: datos del entorno (US-02)
@@ -207,7 +218,7 @@ Escala: 1 = menos de 1 h, 2 = medio día, 3 = 1 día, 5 = 2 a 3 días (incluye i
 | 🤝 Plan de direccionamiento VLAN (IPs y rangos) | A → B, C | Al terminar [US-11](historias/persona-a.md#us-11) |
 | 🤝 Clave pública del par 1 para el `filetree` de los LXC | C → A | Al terminar [US-16](historias/persona-c.md#us-16) |
 | 🤝 Labels de los Pods (`app = web`, `app = admin`) | B, C → C | Al terminar [US-14](historias/persona-b.md#us-14) y [US-17](historias/persona-c.md#us-17) (las usan las NetworkPolicies) |
-| 🔀 Montaje del Secret `ssh-web-authorized` en el Deployment web | C → B | Al terminar [US-17](historias/persona-c.md#us-17) (cambio en `web.tf`) |
+| 🔀 Montaje del Secret `ssh-web-authorized` en el Deployment web | C → B | Al terminar [US-17](historias/persona-c.md#us-17) (cambio en `web-service-deployment.tf`) |
 | 🤝 Credenciales e IP de MySQL | A → B, C | Al terminar [US-20](historias/persona-a.md#us-20) |
 
 ---

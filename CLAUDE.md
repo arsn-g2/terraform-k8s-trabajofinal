@@ -91,7 +91,7 @@ The lab environment lives on temporary storage and is **rebuilt from scratch eve
 - Never create files (including a `CLAUDE.md`) in the scenario root `/mnt/tmp/k8s_lab-calico-v03/` or anywhere else outside this repo. They are lost at the next rebuild, and this file is the only CLAUDE.md the project needs.
 
 - Scenario root on the host: `/mnt/tmp/k8s_lab-calico-v03/`. The repo is cloned at `shared/terraform-k8s-trabajofinal/` under it (see `scripts/host-script.sh`). Edit files on the host.
-- `terraform` LXC VM (10.10.10.13) mounts `shared/` at `/shared`. **Run all `terraform` commands in `/shared/terraform-k8s-trabajofinal/terraform`** inside the VM (`ssh terraform`).
+- **Run `terraform` on the host**, in `/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform` (as `scripts/host-script.sh` does), with the kubeconfig from `./bin/get-master-kubeconf`. The `terraform` LXC VM (10.10.10.13, `shared/` mounted at `/shared`) is still created by the scenario.
 - Cluster:
   - `k8s-master` 10.10.10.10, `k8s-worker1` 10.10.10.11, `k8s-worker2` 10.10.10.12 (k8s v1.37, Calico on `e1`);
   - `r1` 10.10.10.1 / 10.10.20.1;
@@ -123,7 +123,7 @@ chmod +x scripts/gen-keys.sh && ./scripts/gen-keys.sh   # today's SSH keys → k
 
 The host `kubectl` (v1.29) warns about version skew. If a command fails, use `ssh root@k8s-master kubectl …`. While MetalLB has no external IP, test the Ingress through its NodePort: `curl http://10.10.10.11:30097/servers-G2` (the port can change, see `datos-escenario.md` §5).
 
-### Terraform (inside the VM)
+### Terraform (on the host)
 
 ```
 terraform init                     # `rm -rf .terraform .terraform.lock.hcl` if init -upgrade fails

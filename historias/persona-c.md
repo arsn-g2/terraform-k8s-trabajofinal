@@ -27,10 +27,8 @@
 | 1 | [US-16 · Claves SSH y Secrets](#us-16) | 3 | 🤝 | ✅ |
 | 1 | [US-17 · Pod de administración](#us-17) | 5 | 🔀 | ✅ |
 | 1 | [US-18 · Service NodePort del admin](#us-18) | 3 | | ✅ |
-| 2 | [US-24 · SSH desde el admin por la VLAN](#us-24) | 5 | 🔀 | ⬜ |
-| 3 | [US-30 · Política de denegación por defecto](#us-30) | 3 | ⛔ | ✅ |
 | 2 | [US-24 · SSH desde el admin por la VLAN](#us-24) | 5 | 🔀 | ✅ |
-| 3 | [US-30 · Política de denegación por defecto](#us-30) | 3 | ⛔ | ⬜ |
+| 3 | [US-30 · Política de denegación por defecto](#us-30) | 3 | ⛔ | ✅ |
 | 3 | [US-32 · SSH al admin solo desde la IP del host](#us-32) | 5 | ⚠️ | ⬜ |
 | 4 | [US-42 · Memoria y documentación](#us-42) | 3 | 📝 🏁 | ⬜ |
 
@@ -141,7 +139,7 @@ Agregar la interfaz Multus al admin (IP fija, IPAM `static`). Probar SSH con la 
 ### 🛡️ US-30 · Política de denegación por defecto · 3 pts · ⛔
 **Completed:** ✅ · **Depende de:** Fase 2 completa ([H2](../plan.md#hitos)) · **Bloquea a:** [US-31](persona-b.md#us-31), [US-32](#us-32), [US-33](persona-a.md#us-33)
 
-En `netpol.tf`, crear `kubernetes_network_policy_v1` en el namespace del proyecto con `pod_selector {}` y `policy_types = ["Ingress", "Egress"]`, sin reglas (enunciado §5.1).
+En `terraform/network-policies/network-policy-deny-all.tf` (configuración aparte, [D-013](../decisions.md)), crear `kubernetes_network_policy_v1` en el namespace del proyecto (`local.env.namespace`) con `pod_selector {}` y `policy_types = ["Ingress", "Egress"]`, sin reglas (enunciado §5.1).
 
 ⚠️ Avisen al equipo antes de aplicarla: va a "romper" el Ingress y el SSH hasta que estén [US-31](persona-b.md#us-31) y [US-32](#us-32). Ver también el DNS y el `apt` en [US-33](persona-a.md#us-33) y [D-007](../decisions.md).
 
@@ -151,7 +149,9 @@ En `netpol.tf`, crear `kubernetes_network_policy_v1` en el namespace del proyect
 ### 🛡️ US-32 · SSH al admin solo desde la IP del host · 5 pts · ⚠️
 **Completed:** ⬜ · **Depende de:** [US-30](#us-30), [US-18](#us-18)
 
-Regla de ingress en `app = admin` con `ip_block { cidr = "${var.host_user_lan_ip}/32" }` (= `10.10.20.2/32`) en el puerto 22/TCP (enunciado §5.3).
+En `terraform/network-policies/network-policy-admin-ssh.tf` ([D-013](../decisions.md)), regla de ingress en `app = admin` con `ip_block { cidr = "${local.env.host_user_lan_ip}/32" }` (= `10.10.20.2/32`) en el puerto 22/TCP (enunciado §5.3). Namespace y labels también desde `local.env` (`namespace`, `admin_labels`).
+
+⚠️ `host_user_lan_ip` está comentada en `terraform/variables.tf` y `terraform/outputs.tf`: descomentar la variable y el output y hacer `apply` en `terraform/` **antes** del `plan` en `network-policies/`, porque esta configuración solo ve los outputs del último `apply` de la principal.
 
 ⚠️ Comprobar que `externalTrafficPolicy: Local` preserva la IP de origen: en el admin, `ss -tn` o los logs de `sshd` deben mostrar `10.10.20.2` y no la IP de un nodo. `r1` enruta sin NAT, así que debería llegar la IP real del host.
 

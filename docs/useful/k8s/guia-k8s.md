@@ -59,7 +59,7 @@ kubectl describe svc nginx-service                   # Selector, TargetPort, End
 ```bash
 kubectl describe pod <pod>                 # sección Events: imagen, scheduling, volúmenes
 kubectl logs <pod>                         # logs del contenedor
-kubectl logs <pod> -c <contenedor>         # si hay varios contenedores (p. ej. el initContainer)
+kubectl logs <pod> -c <contenedor>         # si hay varios contenedores (p. ej. el sidecar `page-updater-sidecar`)
 kubectl logs <pod> --previous              # logs del contenedor anterior si ha reiniciado
 kubectl get events --sort-by=.lastTimestamp | tail -20
 ```
@@ -127,7 +127,7 @@ kubectl exec $ADMIN -- curl -s -m 3 -o /dev/null -w '%{http_code}\n' http://admi
 La ClusterIP no responde a `ping`: es una IP virtual que kube-proxy traduce solo para los puertos del Service. Probarla con `curl` o `nc`, nunca con `ping`.
 
 ### Balanceo del Service
-Hoy los Pods sirven la página por defecto de nginx, así que el balanceo no se ve en el contenido. Cuando el `index.html` lleve el nombre del Pod (initContainer, D-003):
+Hoy los Pods sirven la página por defecto de nginx, así que el balanceo no se ve en el contenido. Cuando el `index.html` lleve el nombre del Pod (contenedor sidecar, D-009):
 ```bash
 kubectl exec $ADMIN -- sh -c 'for i in $(seq 6); do curl -s -m 3 http://nginx-service | grep -i pod; done'
 ```
