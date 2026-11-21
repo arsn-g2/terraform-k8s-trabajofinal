@@ -25,3 +25,12 @@ PING 10.1.2.100 (10.1.2.100) 56(84) bytes of data.
 --- 10.1.2.100 ping statistics ---
 2 packets transmitted, 2 received, 0% packet loss, time 1002ms
 rtt min/avg/max/mdev = 0.412/0.540/0.669/0.128 ms
+
+
+(base) marilyn.smartinez@l029:/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform$ cd ..   # repo root
+NS=g2-workshop
+URL=$(terraform -chdir=terraform output -raw web_url); echo $URL
+NP=$(terraform -chdir=terraform output -raw admin_service_node_port)
+WEB=$(kubectl get pod -n $NS -l app=web -o jsonpath='{.items[0].metadata.name}')
+http://10.10.10.20/servers-G2
+

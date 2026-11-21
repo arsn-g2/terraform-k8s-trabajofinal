@@ -32,16 +32,27 @@ Los comandos se ejecutan desde el **host**, en la raíz del repo (o con `ssh roo
 | `ingress-nginx` | namespace del controller ([datos-escenario.md §5](../../datos-escenario.md)) |
 | `app.kubernetes.io/name=ingress-nginx`, `app.kubernetes.io/component=controller` | labels del Pod del controller (§5 de datos-escenario) |
 | `nginx-service`, `8080 → 80` | Service web (ClusterIP) |
+| `10.10.10.20` | IP del Ingress que asigna MetalLB → output `web_url` (`http://10.10.10.20/servers-G2`) 🔁 |
+| `10.109.228.217` | ClusterIP de `nginx-service` → output `web_service_cluster_ip` 🔁 |
+| `30002` | NodePort del admin → output `admin_service_node_port` 🔁 |
 
 Variables para el resto de la guía:
 
 ```bash
 NS=g2-workshop
-URL=$(terraform -chdir=terraform output -raw web_url); echo $URL
-CIP=$(kubectl get svc -n $NS nginx-service -o jsonpath='{.spec.clusterIP}'); echo $CIP
 WEBIP=$(kubectl get pod -n $NS -l app=web -o jsonpath='{.items[0].status.podIP}'); echo $WEBIP
 CAP=docs/capturas/us-31-pruebas.txt
 ```
+
+La IP del Ingress, la ClusterIP y el NodePort del admin están escritos tal cual en los comandos (🔁: pueden cambiar tras un `apply` desde cero). Compruébalos antes de empezar:
+
+```bash
+terraform -chdir=terraform output -raw web_url; echo
+terraform -chdir=terraform output -raw web_service_cluster_ip; echo
+terraform -chdir=terraform output -raw admin_service_node_port; echo
+```
+
+Si no salen `http://10.10.10.20/servers-G2`, `10.109.228.217` y `30002`, cámbialos en los comandos. `WEBIP` sigue siendo variable: es la IP de un Pod y cambia cada vez que se recrea (§8).
 
 Para guardar la salida en la captura de la historia, añade `2>&1 | tee -a $CAP` a los comandos de §3–§6.
 
@@ -63,7 +74,7 @@ Y que el punto de partida es el de US-30:
 
 ```bash
 kubectl get networkpolicy -n $NS                                   # solo default-deny-all
-curl -s -o /dev/null -w '%{http_code}\n' -m 30 $URL                # 504 o 000
+curl -s -o /dev/null -w '%{http_code}\n' -m 30 http://10.10.10.20/servers-G2                # 504 o 000
 ```
 
 ---
@@ -112,8 +123,8 @@ Spec:
 ## 4. El Ingress vuelve a funcionar (criterio)
 
 ```bash
-curl -i -m 10 $URL
-for i in $(seq 1 12); do curl -s -m 5 $URL | grep -o 'Pod: <b>[^<]*' | sed 's/.*<b>//'; done | sort | uniq -c
+curl -i -m 10 http://10.10.10.20/servers-G2
+for i in $(seq 1 12); do curl -s -m 5 http://10.10.10.20/servers-G2 | grep -o 'Pod: <b>[^<]*' | sed 's/.*<b>//'; done | sort | uniq -c
 ```
 
 Esperado: `HTTP/1.1 200 OK` con `Served by Pod: <b>nginx-deployment-…</b>`, y el bucle reparte las peticiones entre los **3** Pods.
@@ -128,7 +139,7 @@ Esperado: `HTTP/1.1 200 OK` con `Served by Pod: <b>nginx-deployment-…</b>`, y 
 
 ```bash
 ADMIN=$(kubectl get pod -n $NS -l app=admin -o jsonpath='{.items[0].metadata.name}')
-kubectl exec -n $NS $ADMIN -c admin-server -- curl -s -m 5 -o /dev/null -w '%{http_code}\n' http://$CIP:8080; echo "exit=$?"
+kubectl exec -n $NS $ADMIN -c admin-server -- curl -s -m 5 -o /dev/null -w '%{http_code}\n' http://10.109.228.217:8080; echo "exit=$?"
 kubectl exec -n $NS $ADMIN -c admin-server -- curl -s -m 5 -o /dev/null -w '%{http_code}\n' http://$WEBIP:80; echo "exit=$?"
 ```
 
@@ -141,7 +152,7 @@ Esperado: `000` y timeout en los dos.
 ```bash
 kubectl run tmp -n default --image=busybox --restart=Never -- sleep 3600
 kubectl wait -n default --for=condition=Ready pod/tmp --timeout=60s
-kubectl exec -n default tmp -- wget -qO- -T 5 http://$CIP:8080;  echo "exit=$?"
+kubectl exec -n default tmp -- wget -qO- -T 5 http://10.109.228.217:8080;  echo "exit=$?"
 kubectl exec -n default tmp -- wget -qO- -T 5 http://$WEBIP:80;  echo "exit=$?"
 ```
 
@@ -196,8 +207,7 @@ kubectl delete pod -n ingress-nginx tmp-ns --now
 ```bash
 WEB=$(kubectl get pod -n $NS -l app=web -o jsonpath='{.items[0].metadata.name}')
 kubectl exec -n $NS $WEB -c nginx-server -- curl -s -m 5 -o /dev/null http://nginx-service:8080; echo "exit=$?"   # 28: sin DNS
-NP=$(terraform -chdir=terraform output -raw admin_service_node_port)
-ssh -i keys/par2_host -p $NP -o ConnectTimeout=5 -o BatchMode=yes adminuser@10.10.10.11 hostname              # timeout (US-32)
+ssh -i keys/par2_host -p 30002 -o ConnectTimeout=5 -o BatchMode=yes adminuser@10.10.10.11 hostname              # timeout (US-32)
 ```
 
 Esperado: los dos fallan, igual que en US-30.
@@ -211,7 +221,7 @@ Esperado: los dos fallan, igual que en US-30.
 ```bash
 kubectl delete pod -n $NS $WEB
 kubectl get pods -n $NS -l app=web -w           # Ctrl-C cuando el nuevo esté Running
-for i in $(seq 1 12); do curl -s -m 5 $URL | grep -o 'Pod: <b>[^<]*' | sed 's/.*<b>//'; done | sort | uniq -c
+for i in $(seq 1 12); do curl -s -m 5 http://10.10.10.20/servers-G2 | grep -o 'Pod: <b>[^<]*' | sed 's/.*<b>//'; done | sort | uniq -c
 ```
 
 Esperado: el Pod nuevo aparece en el reparto, sin tocar Terraform.

@@ -28,7 +28,8 @@ Los comandos se ejecutan desde el **host**, en la raíz del repo (o con `ssh roo
 | `default-deny-all` | `terraform/network-policies/network-policy-deny-all.tf` |
 | `app=web`, contenedor `nginx-server` | `local.web_labels`, `web-service-deployment.tf` |
 | `nginx-service` | Service web, ClusterIP `8080 → 80` |
-| `30002` | output `admin_service_node_port` |
+| `10.10.10.20` | IP del Ingress que asigna MetalLB → output `web_url` (`http://10.10.10.20/servers-G2`) 🔁 |
+| `30002` | NodePort del admin → output `admin_service_node_port` 🔁 |
 | `keys/par2_host` | privada del par 2 (host → admin, D-004) |
 | `10.1.2.100` | `bbdd` en `vnx/vnx-vm-bdd-logs.xml` |
 
@@ -36,12 +37,19 @@ Variables para el resto de la guía:
 
 ```bash
 NS=g2-workshop
-URL=$(terraform -chdir=terraform output -raw web_url); echo $URL      # IP de MetalLB o NodePort del controller
-NP=$(terraform -chdir=terraform output -raw admin_service_node_port); echo $NP
 WEB=$(kubectl get pod -n $NS -l app=web -o jsonpath='{.items[0].metadata.name}'); echo $WEB
 web() { kubectl exec -n $NS "$WEB" -c nginx-server -- "$@"; }
 CAP=docs/capturas/us-30-pruebas.txt
 ```
+
+La IP del Ingress y el NodePort del admin están escritos tal cual en los comandos (🔁: pueden cambiar tras un `apply` desde cero). Compruébalos antes de empezar:
+
+```bash
+terraform -chdir=terraform output -raw web_url; echo
+terraform -chdir=terraform output -raw admin_service_node_port; echo
+```
+
+Si no salen `http://10.10.10.20/servers-G2` y `30002`, cámbialos en los comandos. Si MetalLB no tiene IP, `web_url` es `http://10.10.10.11:<NodePort del controller>/servers-G2`.
 
 Para guardar la salida en la captura de la historia, añade `2>&1 | tee -a $CAP` a los comandos de §4–§7.
 
@@ -61,8 +69,8 @@ kubectl get networkpolicy -n $NS          # esperado: No resources found
 Y comprueba que todo responde:
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' -m 10 $URL                                       # 200
-ssh -i keys/par2_host -p $NP -o ConnectTimeout=5 adminuser@10.10.10.11 hostname          # nombre del Pod admin
+curl -s -o /dev/null -w '%{http_code}\n' -m 10 http://10.10.10.20/servers-G2     # 200
+ssh -i keys/par2_host -p 30002 -o ConnectTimeout=5 adminuser@10.10.10.11 hostname          # nombre del Pod admin
 web curl -s -o /dev/null -w '%{http_code}\n' -m 5 http://nginx-service:8080               # 200 (DNS + Service)
 web ping -c 2 -W 2 10.1.2.100                                                             # 0% packet loss
 ```
@@ -114,7 +122,7 @@ Policy Types: Ingress, Egress
 ## 4. El Ingress deja de responder (criterio)
 
 ```bash
-curl -s -o /dev/null -w '%{http_code} en %{time_total}s\n' -m 30 $URL
+curl -s -o /dev/null -w '%{http_code} en %{time_total}s\n' -m 30 http://10.10.10.20/servers-G2
 ```
 
 Esperado: `504` tras unos segundos, o `000` si el `-m` es más corto que la espera del controller.
@@ -122,7 +130,7 @@ Esperado: `504` tras unos segundos, o `000` si el `-m` es más corto que la espe
 Contraste en la misma IP, una ruta que no es nuestra:
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' -m 10 ${URL%/servers-G2}/no-existe              # 404
+curl -s -o /dev/null -w '%{http_code}\n' -m 10 http://10.10.10.20/no-existe              # 404
 ```
 
 > **Por qué 504 y no `connection refused`:** el host sí llega al controller, que está en `ingress-nginx` y no tiene ninguna política. El que falla es el salto siguiente: el controller intenta conectar con la IP de un Pod web en el puerto 80, la política descarta el paquete en silencio (no lo rechaza) y el controller espera hasta su timeout de conexión antes de contestar `504 Gateway Time-out`. El `404` de `/no-existe` lo genera el propio controller, sin pasar por nuestros Pods: demuestra que el controller funciona y que lo cortado es solo la entrada a `g2-workshop`.
@@ -132,7 +140,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -m 10 ${URL%/servers-G2}/no-existe     
 ## 5. El SSH al admin por NodePort falla (criterio)
 
 ```bash
-ssh -i keys/par2_host -p $NP -o ConnectTimeout=5 -o BatchMode=yes adminuser@10.10.10.11 hostname
+ssh -i keys/par2_host -p 30002 -o ConnectTimeout=5 -o BatchMode=yes adminuser@10.10.10.11 hostname
 ```
 
 Esperado: `ssh: connect to host 10.10.10.11 port 30002: Connection timed out`.
@@ -171,7 +179,7 @@ kubectl get pods -n $NS -o wide                       # todo sigue Running: la p
 ```bash
 terraform -chdir=terraform plan                                   # No changes: la app no sabe nada de la política
 terraform -chdir=terraform/network-policies destroy
-curl -s -o /dev/null -w '%{http_code}\n' -m 10 $URL               # vuelve a dar 200 sin reiniciar ningún Pod
+curl -s -o /dev/null -w '%{http_code}\n' -m 10 http://10.10.10.20/servers-G2     # vuelve a dar 200 sin reiniciar ningún Pod
 terraform -chdir=terraform/network-policies apply                 # dejarla aplicada para US-31/32/33
 ```
 
