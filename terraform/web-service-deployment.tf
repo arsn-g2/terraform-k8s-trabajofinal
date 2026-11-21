@@ -51,6 +51,22 @@ resource "kubernetes_deployment_v1" "web_servers" {
             read_only  = true
           }
 
+          # US-23: credenciales de la BD como variables de entorno
+          env_from {
+            secret_ref {
+              name = kubernetes_secret_v1.db_credentials.metadata[0].name
+            }
+          }
+
+          # US-23: la imagen no trae cliente MySQL por lo que se instala al arrancar el Pod.
+          lifecycle {
+            post_start {
+              exec {
+                command = ["/bin/sh", "-c", "apt-get update && apt-get install -y default-mysql-client || true"]
+              }
+            }
+          }
+
           resources {
             requests = {
               cpu    = "100m"

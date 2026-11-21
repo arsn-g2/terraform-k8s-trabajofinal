@@ -80,8 +80,10 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 - **Consequences:** `vnx/vnx-vm-bdd-logs.xml` gives `logs` an `<exec>` (install `rsyslog`+`openssh-server`) and `<filetree>` (`filetree/logs/10-remote.conf` loads `imudp`/`imtcp` on 514 and stores remote logs under `/var/log/remote/<host>/`, plus the par-1 `authorized_keys`). Test: `logger -n 10.1.2.101 prueba` from a Pod leaves the line on the LXC.
 
 ### D-007 DB client and default-deny egress
-- **Status:** Pending (US-23)
-- **Context:** installing a MySQL client with apt (D-012) needs Internet egress, which the deny-all policy blocks.
+- **Status:** Accepted (2026-11-21 / US-23)
+- **Context:** the dgsgiros images (web = Debian 13, admin = Ubuntu 22.04, both run as root, apt) do not ship a MySQL client, and the deny-all egress (US-30) would block installing it with apt.
+- **Decision:** install `default-mysql-client` with a `lifecycle.post_start` hook on the web and admin containers. It runs when the Pods start under the first `terraform apply`, so egress is available; the second apply (`network-policies/`) adds deny-all afterwards. DB credentials go in a `kubernetes_secret_v1` fed by a `sensitive` variable (`TF_VAR_db_password`), injected as env vars.
+- **Consequences:** the client is reinstalled on every Pod re-start; a Pod restarted after deny-all is applied would have no egress to reinstall, but a from-scratch deploy  is fine. `db_password` must match `init.sql` .
 
 ### D-008 Spec version followed
 - **Date / author:** 2026-11-13 / team

@@ -123,3 +123,24 @@ variable "vlan_admin_ip" {
   type        = string
   default     = "10.1.2.5"
 }
+
+variable "db_host" {
+  description = "IP del servidor MySQL en la VLAN"
+  type        = string
+  default     = "10.1.2.100"
+}
+variable "db_name" {
+  description = "Base de datos de la aplicación"
+  type        = string
+  default     = "appdb"
+}
+variable "db_user" {
+  description = "Usuario de la base de datos"
+  type        = string
+  default     = "appuser"
+}
+variable "db_password" {
+  description = "Contraseña de la BDs. Pásala con TF_VAR_db_password; NO en terraform.tfvars."
+  type        = string
+  sensitive   = true
+}
