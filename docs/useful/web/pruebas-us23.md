@@ -55,3 +55,9 @@ Repite 3 y 4 después del `terraform apply` en `terraform/network-policies/`. De
 - [ ] `SHOW DATABASES;` desde un web muestra `appdb`.
 - [ ] `SHOW DATABASES;` desde el admin muestra `appdb`.
 - [ ] Sigue funcionando con las NetworkPolicies aplicadas (2º apply).
+
+## Nota: TLS de MySQL 8 (cliente)
+MySQL 8 ofrece TLS por defecto con un certificado **autofirmado**; hay que decirle al cliente que no lo verifique, y cada cliente usa su flag:
+- Pod web (Debian → cliente **MariaDB**): `mysql --skip-ssl -h ...`
+- Pod admin (Ubuntu → cliente **MySQL**): `mysql --ssl-mode=DISABLED -h ...`
+Sin esto: `ERROR 2026 (HY000): TLS/SSL error: self-signed certificate in certificate chain`.
