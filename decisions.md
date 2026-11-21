@@ -133,3 +133,16 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
   - The real `init.sql` (with the DB password) stays out of Git (`.gitignore`); only `init.sql.example` is committed, and the password is shared with B and C privately.
   - D-007 (DB client on the Pods) now refers to the MySQL client, not MariaDB.
   - Docs updated to say MySQL (2026-11-20). "MariaDB" remains only in the spec copy and where the difference is explained.
+
+### D-013 NetworkPolicies in a separate Terraform configuration
+- **Date / author:** 2026-11-21 / Persona C (US-30)
+- **Status:** Proposed
+- **Context:** the default deny (US-30) cuts all eth0 traffic in the namespace, DNS included, until the allow rules (US-31/32) exist. With it in the same configuration as the app, every `apply` isolates the Pods as soon as they are created, which makes the app stories hard to test on their own.
+- **Options considered:** keep `netpol.tf` in `terraform/` (one configuration, one `apply`); or a second configuration in `terraform/network-policies/`, applied after the main one. For the second one, how it gets the main configuration's values: copy `terraform output -json` into the folder and read it with `file()`/`jsondecode()`; or read the main state with `data "terraform_remote_state"` (`local` backend).
+- **Decision:** a second configuration, `terraform/network-policies/`, applied after `terraform/` (`scripts/host-script.sh`). It reads the main outputs with `terraform_remote_state` pointed at `../terraform.tfstate`, exposed as `local.env` (`env-outputs.tf`).
+- **Why:** the policies can be applied and destroyed without touching the app, so the app can be tested first and the policies after. `terraform_remote_state` always reads the current main state, with no copy step that can go stale or be forgotten, and the namespace and labels are not defined twice.
+- **Consequences:**
+  - Two `init`/`apply` runs, in order: `terraform/` first, then `terraform/network-policies/` (its own state and its own `k8s-provider.tf`). `terraform destroy` in `terraform/` does not remove the policies: destroy `network-policies/` first.
+  - The policies can only use values that are **outputs** of the main configuration, as of its last `apply` (namespace, `web_labels`, `admin_labels`, ...). A new value means a new output in `terraform/outputs.tf` and an `apply` there.
+  - It relies on the main configuration keeping the default local backend. If a backend is ever added, `env-outputs.tf` has to change to match.
+  - The PDF asks for an automatic deployment; the bring-up script still runs both configurations, so it stays one command.

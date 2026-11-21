@@ -42,15 +42,17 @@ sudo vnx -f vnx-vm-bdd-logs.xml --create
 
 ```
 
-Para trabajar con Terraform:
+Para trabajar con Terraform hay **dos configuraciones** ([D-013](../decisions.md)), cada una con su state, y se aplican en este orden: primero la aplicación (`terraform/`) y después las NetworkPolicies (`terraform/network-policies/`), que leen los outputs de la primera con `terraform_remote_state`.
 
 ```bash
 ssh terraform
 cd /shared/terraform-k8s-trabajofinal/terraform
-terraform init && terraform plan
+terraform init && terraform plan && terraform apply
+cd network-policies
+terraform init && terraform plan && terraform apply
 ```
 
-Para apagarlo todo: `sudo vnx -f vnx/vnx-vm-bdd-logs.xml --destroy` (desde el repo), `./bin/stop-k8s-calico` y `sudo vnx -f k8s_lab-terraform.xml --destroy`.
+Para apagarlo todo: `terraform destroy` primero en `terraform/network-policies/` y después en `terraform/` (el destroy de `terraform/` no borra las políticas), `sudo vnx -f vnx/vnx-vm-bdd-logs.xml --destroy` (desde el repo), `./bin/stop-k8s-calico` y `sudo vnx -f k8s_lab-terraform.xml --destroy`.
 
 ---
 
@@ -195,6 +197,8 @@ sudo vnx -f vnx/vnx-vm-bdd-logs.xml --destroy   # parada
 ## 10. NetworkPolicies y direccionamiento de los Pods
 
 Explicación de cómo encajan las NetworkPolicies del enunciado (§5 del PDF) con el escenario. Las IPs de Pods del diagrama son ejemplos.
+
+Las políticas están en una configuración de Terraform aparte, `terraform/network-policies/` ([D-013](../decisions.md)). El namespace y los labels los sacan de los outputs de `terraform/` (`local.env.namespace`, `local.env.web_labels`, ...), así que hay que hacer `apply` en `terraform/` antes.
 
 ### 10.1 ¿Cada Pod necesita una IP distinta? ¿Hay que configurarla?
 

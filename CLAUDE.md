@@ -48,7 +48,9 @@ python scripts/us-done.py --undo 16
 
 ### Repo state
 
-- `terraform/` is the Trabajo Final working folder: one Terraform configuration, split into one `.tf` file per area so that each person edits their own file and conflicts are avoided (target split in `plan.md` §3; NetworkPolicies, `netpol.tf`, are not written yet). Every resource goes in the dedicated namespace (`var.namespace`, D-002).
+- `terraform/` is the Trabajo Final working folder: one Terraform configuration, split into one `.tf` file per area so that each person edits their own file and conflicts are avoided (target split in `plan.md` §3). Every resource goes in the dedicated namespace (`var.namespace`, D-002).
+  - The NetworkPolicies are a **second, separate configuration** in `terraform/network-policies/` (D-013), with its own provider file and state, applied after `terraform/`. It so far holds only the namespace-wide default deny (US-30); the allow rules (US-31/32) still have to be added, and until then the Pods have no eth0 traffic at all, DNS included.
+  - `network-policies/env-outputs.tf` reads the main configuration's outputs with `data "terraform_remote_state"` (local backend, `../terraform.tfstate`) as `local.env.<output>`. Use `local.env`, never references to main-config resources. Only **outputs** from the last main `apply` are visible: a new value means a new output in `terraform/outputs.tf` plus an `apply` there first.
   - `ssh.tf` loads the Secrets from `keys/` with `file()`, so `plan` fails with "no file exists" until `scripts/gen-keys.sh` has run that day.
   - Variables and outputs that no resource uses yet (`host_user_lan_ip`, `worker1_ip`) are commented out in `variables.tf`/`outputs.tf`; uncomment them when the resource that needs them is written.
   - `terraform.tfvars` is tracked (`*.tfvars` is commented out in `.gitignore`) and sets `web_num_replicas = 3` (the PDF value).
@@ -131,7 +133,9 @@ terraform state list | terraform state show TYPE.NAME
 terraform output [-json] [NAME]
 ```
 
-Terraform loads **every `.tf` in the folder** as one configuration, so never mix the example folders into `terraform/`. At each milestone the team runs `terraform destroy && terraform apply` from clean.
+Terraform loads **every `.tf` in the folder** (not subfolders) as one configuration, so never mix the example folders into `terraform/`.
+
+There are two configurations (D-013), so `init`/`apply` run twice and in order: `terraform/` first, then `terraform/network-policies/` (`scripts/host-script.sh` does both). Destroy in the reverse order: `network-policies/` first, since destroying `terraform/` does not remove the policies. At each milestone the team destroys and re-applies both from clean.
 
 ## Git conventions (`docs/convenciones.md`)
 
