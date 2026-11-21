@@ -16,9 +16,30 @@ resource "kubernetes_deployment_v1" "admin_server" {
     selector {
       match_labels = local.admin_labels
     }
+
+    # US-24: la IP de la VLAN es fija (10.1.2.5), así que nunca puede haber dos Pods admin a la vez.
+    # Con RollingUpdate (el valor por defecto) el Pod nuevo arranca antes de borrar el viejo
+    # y los dos tendrían 10.1.2.5 durante unos segundos. Recreate borra primero el viejo.
+    strategy {
+      type = "Recreate"
+    }
+
     template {
       metadata {
         labels = local.admin_labels
+
+        # US-24: segunda interfaz (net1) en la VLAN 1000 con IP fija (D-005).
+        # Multus lee esta anotación, usa la NAD vlan1000-admin (macvlan sobre e2.1000, IPAM static)
+        # y le pasa la IP pedida gracias a capabilities.ips. Queda así:
+        #   [{"name": "vlan1000-admin", "ips": ["10.1.2.5/24"]}]
+        # Referenciar la NAD (y no escribir su nombre) hace que Terraform la cree antes que el Deployment.
+        annotations = {
+          "k8s.v1.cni.cncf.io/networks" = jsonencode([{
+            name = kubernetes_manifest.nad_admin.manifest.metadata.name
+            ips  = [local.vlan_admin_cidr]
+          }])
+        }
+
       }
       spec {
         node_selector = {

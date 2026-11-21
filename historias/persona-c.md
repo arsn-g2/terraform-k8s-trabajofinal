@@ -29,6 +29,8 @@
 | 1 | [US-18 · Service NodePort del admin](#us-18) | 3 | | ✅ |
 | 2 | [US-24 · SSH desde el admin por la VLAN](#us-24) | 5 | 🔀 | ⬜ |
 | 3 | [US-30 · Política de denegación por defecto](#us-30) | 3 | ⛔ | ✅ |
+| 2 | [US-24 · SSH desde el admin por la VLAN](#us-24) | 5 | 🔀 | ✅ |
+| 3 | [US-30 · Política de denegación por defecto](#us-30) | 3 | ⛔ | ⬜ |
 | 3 | [US-32 · SSH al admin solo desde la IP del host](#us-32) | 5 | ⚠️ | ⬜ |
 | 4 | [US-42 · Memoria y documentación](#us-42) | 3 | 📝 🏁 | ⬜ |
 
@@ -121,7 +123,7 @@ Permisos, según el ejemplo del enunciado §2.5:
 
 <a id="us-24"></a>
 ### 🔑 US-24 · SSH desde el admin por la VLAN · 5 pts · 🔀
-**Completed:** ⬜ · **Depende de:** [US-11](persona-a.md#us-11), [US-17](#us-17), [US-20](persona-a.md#us-20), [US-22](persona-b.md#us-22)
+**Completed:** ✅ · **Depende de:** [US-11](persona-a.md#us-11), [US-17](#us-17), [US-20](persona-a.md#us-20), [US-22](persona-b.md#us-22)
 
 Agregar la interfaz Multus al admin (IP fija, IPAM `static`). Probar SSH con la clave del par 1 desde el admin a los 3 Pods web (`webuser@<ip-vlan-web>`) y a los 2 LXC, usando las IPs de la VLAN (enunciado §2.4 y §2.7). Opcional: un `~/.ssh/config` del admin con las IPs, cargado desde un ConfigMap (se ve bien en la demo).
 
