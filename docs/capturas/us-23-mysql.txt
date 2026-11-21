@@ -1,0 +1,26 @@
+### US-23 · Pods
+NAME                                READY   STATUS    RESTARTS   AGE   IP              NODE          NOMINATED NODE   READINESS GATES
+admin-deployment-6ff674c67f-tkm2d   1/1     Running   0          10m   172.16.194.69   k8s-worker1   <none>           <none>
+nginx-deployment-7c97b4bfb4-7tppp   2/2     Running   0          10m   172.16.126.1    k8s-worker2   <none>           <none>
+nginx-deployment-7c97b4bfb4-mtwlh   2/2     Running   0          10m   172.16.126.2    k8s-worker2   <none>           <none>
+nginx-deployment-7c97b4bfb4-vr9q5   2/2     Running   0          10m   172.16.194.70   k8s-worker1   <none>           <none>
+
+### cliente mysql instalado (post_start)
+/usr/bin/mysql
+/usr/bin/mysql
+
+### env de la BD (web)
+10.1.2.100
+appuser
+appdb
+
+### mysql desde web (Debian/MariaDB, --skip-ssl)
+Database
+appdb
+information_schema
+
+### mysql desde admin (Ubuntu/MySQL, --ssl-mode=DISABLED)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Database
+appdb
+information_schema
