@@ -188,7 +188,7 @@ Instalar SSH con el mismo `authorized_keys` (par 1) y el servicio de logs de [D-
 
 ⚠️ Calico aplica las NetworkPolicies solo a la interfaz que gestiona (`eth0` del Pod), no a las interfaces Multus (`net1`). Comprobarlo:
 - si el SSH y MySQL por la VLAN siguen funcionando con default-deny, documentarlo como hallazgo en la memoria;
-- si no funcionan, agregar las reglas de egress/ingress necesarias con `ip_block` de la subred VLAN (coordinar con C, porque es su `netpol.tf`).
+- si no funcionan, agregar las reglas de egress/ingress necesarias con `ip_block` de la subred VLAN en un fichero nuevo de `terraform/network-policies/` ([D-013](../decisions.md); coordinar con C, que lleva esa configuración).
 
 ⚠️ Revisar también el **DNS**: el egress denegado rompe la resolución de nombres. Si algo depende de DNS, agregar egress a `kube-dns` (UDP/TCP 53).
 

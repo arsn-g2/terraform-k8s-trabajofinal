@@ -90,7 +90,7 @@ El enunciado (§3) pide que **cada réplica muestre el nombre de su Pod**. Monta
 ConfigMap (plantilla con __POD_NAME__)          Downward API: metadata.name → $POD_NAME
           │ volumen de solo lectura                              │
           ▼                                                      ▼
-   initContainer ── sed "s/__POD_NAME__/$POD_NAME/" ──► emptyDir (escribible)
+   sidecar ── sed "s/__POD_NAME__/$POD_NAME/" ──► emptyDir (escribible)
                                                                  │
                                                                  ▼
                                                     contenedor web: sirve index.html
@@ -101,7 +101,7 @@ ConfigMap (plantilla con __POD_NAME__)          Downward API: metadata.name → 
 | Imagen | `nginx` | `dgsgiros/nginx-ssh:latest` (nginx + `sshd`, usuario `webuser`) |
 | Réplicas | 3 | 3 (`var.num_replicas`) |
 | Label | `app: nginx` | `app = web` (lo usan el Service y las NetworkPolicies) |
-| Página | ConfigMap montado directamente | ConfigMap como **plantilla** → initContainer → `emptyDir` ([D-003](../../../decisions.md)) |
+| Página | ConfigMap montado directamente | ConfigMap como **plantilla** → contenedor sidecar → `emptyDir` ([D-009](../../../decisions.md)) |
 | Nombre del Pod | — | Downward API (`metadata.name`) |
 | Grupo | `group: X` a mano | `var.group_number` (2) con `templatefile()` |
 | Raíz de nginx | `/usr/share/nginx/html` | `⟪PENDIENTE: comprobar en dgsgiros/nginx-ssh⟫` |
@@ -114,7 +114,7 @@ ConfigMap (plantilla con __POD_NAME__)          Downward API: metadata.name → 
 
 ### 3.1 Plantilla HTML (`terraform/templates/index.html.tpl`)
 
-Basada en [`index.html`](p13/index.html). `${group}` lo rellena Terraform; `__POD_NAME__` lo rellena el initContainer en cada Pod:
+Basada en [`index.html`](p13/index.html). `${group}` lo rellena Terraform; `__POD_NAME__` lo rellena el sidecar en cada Pod:
 
 ```html
 <!DOCTYPE html>
@@ -166,10 +166,11 @@ resource "kubernetes_deployment_v1" "web" {
         # annotations Multus: ver ../multus/guia-multus.md §4.3
       }
       spec {
-        init_container {
-          name    = "render-index"
+        container {                          # sidecar (D-009): segundo contenedor del Pod
+          name    = "page-updater-sidecar"
           image   = var.image_web           # ya trae sed; evita descargar busybox
-          command = ["sh", "-c", "sed \"s/__POD_NAME__/$POD_NAME/g\" /template/index.html > /html/index.html"]
+          # sleep infinity: si el proceso termina, el kubelet lo reinicia (CrashLoopBackOff)
+          command = ["sh", "-c", "sed \"s/__POD_NAME__/$POD_NAME/g\" /template/index.html > /html/index.html && sleep infinity"]
           env {
             name = "POD_NAME"
             value_from {
@@ -280,14 +281,15 @@ El antiguo NodePort del Service web deja de responder porque, al pasar a `Cluste
 | Síntoma | Causa probable |
 |---|---|
 | Página por defecto de nginx en vez de la nuestra | El `emptyDir` no está montado en la raíz real de nginx de la imagen |
-| 403 Forbidden | El `emptyDir` está vacío: el initContainer falló o escribió en otra ruta (`kubectl logs <pod> -c render-index`) |
-| `__POD_NAME__` aparece literal | Falta la variable `POD_NAME` en el initContainer, o el `sed` usa comillas simples (no expande `$POD_NAME`) |
-| El initContainer no puede escribir | El volumen de destino es el del ConfigMap (solo lectura) en vez del `emptyDir` |
-| Las 3 réplicas muestran el mismo nombre | Se generó la página fuera del Pod (por ejemplo, en Terraform) en vez de en el initContainer |
+| 403 Forbidden | El `emptyDir` está vacío: el sidecar falló, escribió en otra ruta o todavía no ha escrito (nginx puede arrancar antes; `kubectl logs <pod> -c page-updater-sidecar`) |
+| `__POD_NAME__` aparece literal | Falta la variable `POD_NAME` en el sidecar, o el `sed` usa comillas simples (no expande `$POD_NAME`) |
+| El sidecar no puede escribir | El volumen de destino es el del ConfigMap (solo lectura) en vez del `emptyDir` |
+| Pod en `CrashLoopBackOff` (sidecar reiniciándose) | Falta el `&& sleep infinity`: el sidecar termina tras el `sed` y el kubelet lo reinicia |
+| Las 3 réplicas muestran el mismo nombre | Se generó la página fuera del Pod (por ejemplo, en Terraform) en vez de en el sidecar |
 
 ---
 
 ## 6. Pendientes
 
 - [ ] Raíz que sirve nginx en `dgsgiros/nginx-ssh:latest`: `kubectl run tmp --rm -it --restart=Never --image=dgsgiros/nginx-ssh:latest --command -- sh -c 'grep -r "root" /etc/nginx/'` ([§2](#2-qué-cambia-en-el-trabajo-final)).
-- [ ] Comprobar que la imagen tiene `sh` y `sed` para usarla también en el initContainer; si no, usar `busybox`.
+- [ ] Comprobar que la imagen tiene `sh` y `sed` para usarla también en el sidecar; si no, usar `busybox`.

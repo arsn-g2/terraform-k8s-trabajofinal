@@ -31,7 +31,7 @@ US-<NN>: <qué se hizo, en presente>
 Ejemplos:
 
 ```
-US-14: agrega initContainer que genera index.html con el nombre del Pod
+US-14: agrega contenedor sidecar que genera index.html con el nombre del Pod
 US-15: corrige rewrite-target del Ingress
 US-30: agrega NetworkPolicy default-deny
 ```

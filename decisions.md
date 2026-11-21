@@ -28,7 +28,7 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 - **Why:** this is our group number. A variable keeps the code reusable.
 
 ### D-002 Dedicated namespace
-- **Status:** Proposed
+- **Status:** Accepted
 - **Context:** the PDF doesn't name a namespace. The P1.4 objects live in `default`.
 - **Options:** `default`, or a dedicated namespace such as `trabajo-final`.
 - **Decision:** a dedicated namespace (`var.namespace`).
@@ -54,7 +54,7 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 
 ### D-005 VLAN IPAM
 - **Date / author:** 2026-11-16 / Persona A
-- **Status:** Accepted.
+- **Status:** Accepted
 - **Context:** the web servers are a Deployment of 3 replicas, so every Pod shares one template and one Multus annotation, and the replicas land on both workers. The P1.3 NAD uses `static` IPAM with the IP in each Pod's annotation, which a Deployment cannot do. `whereabouts` is not installed in the lab (checked 2026-11-13).
 - **Options considered:**
   - `static` (as in P1.3): tested; the Pods never start (`IPAM plugin returned missing IP config`).
@@ -98,7 +98,7 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 - **Options considered:** A, a second `container` in the Pod that writes `index.html` into a shared `emptyDir` and stays running; B, an `init_container` that writes it once and exits.
 - **Decision:** Option A (sidecar).
 - **Why:** to learn and show the sidecar pattern (containers sharing a volume, parallel lifecycle), which is also what you need when content changes while the Pod runs. B would be enough for a value that never changes, such as the Pod name.
-- **Consequences:** the sidecar must stay alive after writing the page (for example `sleep infinity`); otherwise the kubelet restarts it and the Pod goes into `CrashLoopBackOff`. Nginx can start before the page exists, so the first requests may return 403/404 for a moment. The sidecar runs for the Pod's whole life. US-14 (`historias/persona-b.md`) and `docs/useful/web/guia-web.md` §3.3 describe Option B and need updating.
+- **Consequences:** the sidecar must stay alive after writing the page (for example `sleep infinity`); otherwise the kubelet restarts it and the Pod goes into `CrashLoopBackOff`. Nginx can start before the page exists, so the first requests may return 403/404 for a moment. The sidecar runs for the Pod's whole life. US-14 (`historias/persona-b.md`) and `docs/useful/web/guia-web.md` (§2, §3, §5) were updated to Option A (2026-11-21).
 
 ### D-010 One shared VLAN: 1000, 10.1.2.0/24
 - **Date / author:** 2026-11-16 / Persona A, agreed by the team
@@ -112,7 +112,7 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
 
 ### D-011 whereabouts installed by a script on every start-up
 - **Date / author:** 2026-11-17 / Persona A
-- **Status:** Proposed
+- **Status:** Accepted
 - **Context:** D-005 picks `whereabouts` for the web Pods. The scenario does not include it and is rebuilt from scratch every day, so it has to be installed every time (US-11).
 - **Options considered:** install it from Terraform (one `kubernetes_manifest` per object of the upstream YAML); or a script run at start-up, like `setup-vlan-workers.sh`.
 - **Decision:** `scripts/setup-whereabouts.sh`, run on every start-up after `./bin/get-master-kubeconf` and before `terraform apply`. It installs a fixed release, `v0.9.4`, and pins the image to the same tag instead of `:latest`.
@@ -133,3 +133,16 @@ Add one entry per decision. Never delete an entry: if a decision changes, set th
   - The real `init.sql` (with the DB password) stays out of Git (`.gitignore`); only `init.sql.example` is committed, and the password is shared with B and C privately.
   - D-007 (DB client on the Pods) now refers to the MySQL client, not MariaDB.
   - Docs updated to say MySQL (2026-11-20). "MariaDB" remains only in the spec copy and where the difference is explained.
+
+### D-013 NetworkPolicies in a separate Terraform configuration
+- **Date / author:** 2026-11-21 / Persona C (US-30)
+- **Status:** Accepted
+- **Context:** the default deny (US-30) cuts all eth0 traffic in the namespace, DNS included, until the allow rules (US-31/32) exist. With it in the same configuration as the app, every `apply` isolates the Pods as soon as they are created, which makes the app stories hard to test on their own.
+- **Options considered:** keep `netpol.tf` in `terraform/` (one configuration, one `apply`); or a second configuration in `terraform/network-policies/`, applied after the main one. For the second one, how it gets the main configuration's values: copy `terraform output -json` into the folder and read it with `file()`/`jsondecode()`; or read the main state with `data "terraform_remote_state"` (`local` backend).
+- **Decision:** a second configuration, `terraform/network-policies/`, applied after `terraform/` (`scripts/host-script.sh`). It reads the main outputs with `terraform_remote_state` pointed at `../terraform.tfstate`, exposed as `local.env` (`env-outputs.tf`).
+- **Why:** the policies can be applied and destroyed without touching the app, so the app can be tested first and the policies after. `terraform_remote_state` always reads the current main state, with no copy step that can go stale or be forgotten, and the namespace and labels are not defined twice.
+- **Consequences:**
+  - Two `init`/`apply` runs, in order: `terraform/` first, then `terraform/network-policies/` (its own state and its own `k8s-provider.tf`). `terraform destroy` in `terraform/` does not remove the policies: destroy `network-policies/` first.
+  - The policies can only use values that are **outputs** of the main configuration, as of its last `apply` (namespace, `web_labels`, `admin_labels`, ...). A new value means a new output in `terraform/outputs.tf` and an `apply` there.
+  - It relies on the main configuration keeping the default local backend. If a backend is ever added, `env-outputs.tf` has to change to match.
+  - The PDF asks for an automatic deployment; the bring-up script still runs both configurations, so it stays one command.

@@ -48,7 +48,9 @@ python scripts/us-done.py --undo 16
 
 ### Repo state
 
-- `terraform/` is the Trabajo Final working folder: one Terraform configuration, split into one `.tf` file per area so that each person edits their own file and conflicts are avoided (target split in `plan.md` §3; NetworkPolicies, `netpol.tf`, are not written yet). Every resource goes in the dedicated namespace (`var.namespace`, D-002).
+- `terraform/` is the Trabajo Final working folder: one Terraform configuration, split into one `.tf` file per area so that each person edits their own file and conflicts are avoided (target split in `plan.md` §3). Every resource goes in the dedicated namespace (`var.namespace`, D-002).
+  - The NetworkPolicies are a **second, separate configuration** in `terraform/network-policies/` (D-013), with its own provider file and state, applied after `terraform/`. It so far holds only the namespace-wide default deny (US-30); the allow rules (US-31/32) still have to be added, and until then the Pods have no eth0 traffic at all, DNS included.
+  - `network-policies/env-outputs.tf` reads the main configuration's outputs with `data "terraform_remote_state"` (local backend, `../terraform.tfstate`) as `local.env.<output>`. Use `local.env`, never references to main-config resources. Only **outputs** from the last main `apply` are visible: a new value means a new output in `terraform/outputs.tf` plus an `apply` there first.
   - `ssh.tf` loads the Secrets from `keys/` with `file()`, so `plan` fails with "no file exists" until `scripts/gen-keys.sh` has run that day.
   - Variables and outputs that no resource uses yet (`host_user_lan_ip`, `worker1_ip`) are commented out in `variables.tf`/`outputs.tf`; uncomment them when the resource that needs them is written.
   - `terraform.tfvars` is tracked (`*.tfvars` is commented out in `.gitignore`) and sets `web_num_replicas = 3` (the PDF value).
@@ -89,7 +91,7 @@ The lab environment lives on temporary storage and is **rebuilt from scratch eve
 - Never create files (including a `CLAUDE.md`) in the scenario root `/mnt/tmp/k8s_lab-calico-v03/` or anywhere else outside this repo. They are lost at the next rebuild, and this file is the only CLAUDE.md the project needs.
 
 - Scenario root on the host: `/mnt/tmp/k8s_lab-calico-v03/`. The repo is cloned at `shared/terraform-k8s-trabajofinal/` under it (see `scripts/host-script.sh`). Edit files on the host.
-- `terraform` LXC VM (10.10.10.13) mounts `shared/` at `/shared`. **Run all `terraform` commands in `/shared/terraform-k8s-trabajofinal/terraform`** inside the VM (`ssh terraform`).
+- **Run `terraform` on the host**, in `/mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform` (as `scripts/host-script.sh` does), with the kubeconfig from `./bin/get-master-kubeconf`. The `terraform` LXC VM (10.10.10.13, `shared/` mounted at `/shared`) is still created by the scenario.
 - Cluster:
   - `k8s-master` 10.10.10.10, `k8s-worker1` 10.10.10.11, `k8s-worker2` 10.10.10.12 (k8s v1.37, Calico on `e1`);
   - `r1` 10.10.10.1 / 10.10.20.1;
@@ -121,7 +123,7 @@ chmod +x scripts/gen-keys.sh && ./scripts/gen-keys.sh   # today's SSH keys → k
 
 The host `kubectl` (v1.29) warns about version skew. If a command fails, use `ssh root@k8s-master kubectl …`. While MetalLB has no external IP, test the Ingress through its NodePort: `curl http://10.10.10.11:30097/servers-G2` (the port can change, see `datos-escenario.md` §5).
 
-### Terraform (inside the VM)
+### Terraform (on the host)
 
 ```
 terraform init                     # `rm -rf .terraform .terraform.lock.hcl` if init -upgrade fails
@@ -131,7 +133,9 @@ terraform state list | terraform state show TYPE.NAME
 terraform output [-json] [NAME]
 ```
 
-Terraform loads **every `.tf` in the folder** as one configuration, so never mix the example folders into `terraform/`. At each milestone the team runs `terraform destroy && terraform apply` from clean.
+Terraform loads **every `.tf` in the folder** (not subfolders) as one configuration, so never mix the example folders into `terraform/`.
+
+There are two configurations (D-013), so `init`/`apply` run twice and in order: `terraform/` first, then `terraform/network-policies/` (`scripts/host-script.sh` does both). Destroy in the reverse order: `network-policies/` first, since destroying `terraform/` does not remove the policies. At each milestone the team destroys and re-applies both from clean.
 
 ## Git conventions (`docs/convenciones.md`)
 

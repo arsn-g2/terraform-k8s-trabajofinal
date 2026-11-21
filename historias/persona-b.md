@@ -68,10 +68,10 @@ En `web.tf`, crear `kubernetes_config_map_v1` con un `index.html` que tenga un m
 ### 🖥️ US-14 · Deployment web con página personalizada · 5 pts · 🤝
 **Completed:** ✅ · **Depende de:** [US-13](#us-13)
 
-`kubernetes_deployment_v1` con 3 réplicas de **`dgsgiros/nginx-ssh:latest`** (usuario `webuser`, GID 1000, con `sudo`). **Opción B (initContainer)**, según [D-003](../decisions.md):
-- `env POD_NAME` vía Downward API (`field_ref { field_path = "metadata.name" }`);
-- el initContainer ejecuta `sed "s/__POD_NAME__/$POD_NAME/g" /plantilla/index.html > /html/index.html`. Puede usar la misma imagen web (ya está descargada en los nodos) en vez de `busybox`;
-- volúmenes (enunciado §3.3): ConfigMap (`read_only = true`) en el initContainer y `empty_dir` compartido en el initContainer y en el contenedor de Nginx, montado en la raíz que sirve la imagen (comprobarla con `kubectl exec <pod> -- grep -r root /etc/nginx/`);
+`kubernetes_deployment_v1` con 3 réplicas de **`dgsgiros/nginx-ssh:latest`** (usuario `webuser`, GID 1000, con `sudo`). **Opción A (contenedor sidecar)**, según [D-009](../decisions.md) (sustituye a D-003, que proponía un initContainer):
+- `env POD_NAME` vía Downward API (`field_ref { field_path = "metadata.name" }`) en el sidecar;
+- el sidecar ejecuta `sed "s/__POD_NAME__/$POD_NAME/g" /template/index.html > /html/index.html && sleep infinity`. Puede usar la misma imagen web (ya está descargada en los nodos) en vez de `busybox`. El `sleep infinity` lo mantiene vivo: si el proceso termina, el kubelet lo reinicia y el Pod entra en `CrashLoopBackOff`;
+- volúmenes (enunciado §3.3): ConfigMap (`read_only = true`) en el sidecar y `empty_dir` compartido en el sidecar y en el contenedor de Nginx, montado en la raíz que sirve la imagen (comprobarla con `kubectl exec <pod> -- grep -r root /etc/nginx/`);
 - no sobrescribir el `command` del contenedor web: la imagen arranca Nginx **y** `sshd`;
 - 🤝 labels claras (por ejemplo, `app = web`), porque las usan el Service y las NetworkPolicies de C. Avísale cuáles quedaron.
 
@@ -128,7 +128,7 @@ Guardar las credenciales de la BBDD en un `kubernetes_secret_v1` y exponerlas co
 ### 🛡️ US-31 · Acceso a los web solo desde el Ingress Controller · 5 pts
 **Completed:** ⬜ · **Depende de:** [US-30](persona-c.md#us-30), [US-15](#us-15)
 
-Regla de ingress en los Pods `app = web` (enunciado §5.2) con un solo bloque `from`, que contenga juntos:
+En `terraform/network-policies/network-policy-web-ingress.tf` (configuración aparte de C, [D-013](../decisions.md)): namespace y labels de los web desde `local.env` (`namespace`, `web_labels`), no desde recursos de `terraform/`. Regla de ingress en los Pods `app = web` (enunciado §5.2) con un solo bloque `from`, que contenga juntos:
 - `namespace_selector` con `kubernetes.io/metadata.name = ingress-nginx`;
 - `pod_selector` con las labels del controller: `app.kubernetes.io/name = ingress-nginx` y `app.kubernetes.io/component = controller` ([US-02](persona-a.md#us-02));
 

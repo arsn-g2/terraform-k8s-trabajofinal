@@ -8,7 +8,7 @@
 resource "kubernetes_network_policy_v1" "default_deny_all" {
   metadata {
     name      = "default-deny-all"
-    namespace = kubernetes_namespace_v1.namespace.metadata[0].name
+    namespace = local.env.namespace
   }
 
   spec {

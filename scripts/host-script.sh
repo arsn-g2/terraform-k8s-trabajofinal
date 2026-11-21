@@ -30,3 +30,17 @@ chmod +x scripts/*
 cd /mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/vnx
 sed 's/__CAMBIA_ESTA_PASSWORD__/1q2w3e4r/g' filetree/bbdd/init.sql.example > filetree/bbdd/init.sql
 sudo vnx -f vnx-vm-bdd-logs.xml --create
+
+
+# apply terraform
+cd /mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform
+terraform init
+terraform plan
+terraform apply -auto-approve
+
+
+#apply terraform again to create the network policies
+cd /mnt/tmp/k8s_lab-calico-v03/shared/terraform-k8s-trabajofinal/terraform/network-policies
+terraform init
+terraform plan
+terraform apply -auto-approve
